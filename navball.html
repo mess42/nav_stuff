@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>Nav Ball</title>
+
+<script language="JavaScript"> 
+
+    // global variables
+    var dest_lon = 13.399167900667795;
+    var dest_lat = 50.84854;
+    var current_lon = 0.0;
+    var current_lat = 0.0;
+    var previous_lon = 0.0;
+    var previous_lat = 0.0;
+    var r = 6378.137; // Earth radius in km
+    var update_in_ms = 1000;
+    
+    
+    function init() {
+        document.getElementById("dest_lon").innerHTML  = dest_lon;
+        document.getElementById("dest_lat").innerHTML  = dest_lat;
+        
+        var myVar = setInterval( mainloop, update_in_ms );
+    }
+    
+ 
+    function mainloop() {
+        var d = new Date();
+        document.getElementById("time").innerHTML = d.toLocaleTimeString();
+        
+        navigator.geolocation.getCurrentPosition(updatePosition);
+        document.getElementById("current_lon").innerHTML = current_lon;
+        document.getElementById("current_lat").innerHTML = current_lat;
+        
+        document.getElementById("distance").innerHTML = angles2distance(lon1_deg=current_lon,lat1_deg=current_lat, lon2_deg=dest_lon,lat2_deg=dest_lat );
+        
+        var lon_distance = r * Math.cos(current_lat) * (current_lon - dest_lon) * Math.PI / 180.0;
+        var lat_distance = r * (current_lat - dest_lat) * Math.PI / 180.0;
+        var euclid_azim = Math.atan2(-lon_distance, -lat_distance);
+        document.getElementById("lon_distance").innerHTML = lon_distance;
+        document.getElementById("lat_distance").innerHTML = lat_distance;
+        document.getElementById("euclid_distance").innerHTML = Math.sqrt( Math.pow(lon_distance,2) + Math.pow(lat_distance,2) );
+        document.getElementById("euclid_azim").innerHTML = euclid_azim * 180.0 / Math.PI;
+        
+        var v_lon = r * Math.cos(current_lat) * (current_lon - previous_lon) * Math.PI / 180.0 * 1E6 / update_in_ms ;
+        var v_lat = r * (current_lat - previous_lat) * Math.PI / 180.0 * 1E6 / update_in_ms ;
+        var v_azim = Math.atan2(-v_lon, -v_lat);
+        document.getElementById("v_lon").innerHTML = v_lon * 3.6;
+        document.getElementById("v_lat").innerHTML = v_lat * 3.6;
+        document.getElementById("v").innerHTML = Math.sqrt( Math.pow(v_lon,2) + Math.pow(v_lat,2) ) * 3.6;
+        document.getElementById("v_azim").innerHTML = v_azim * 180.0 / Math.PI;
+        previous_lon = current_lon;
+        previous_lat = current_lat;
+        
+        var c = document.getElementById("nav_ball_canvas");
+        var ctx = c.getContext("2d");
+        var xcenter = 0.5 * c.width;
+        var ycenter = 0.5 * c.height;
+        var radius  = 0.95 * Math.min(xcenter, ycenter, c.width-xcenter, c.height-ycenter);
+        ctx.lineWidth = 10;
+        
+        var n_azim = 0;//- v_azim;
+        // background
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, c.width, c.height);
+        
+        // circle
+        ctx.beginPath();
+        ctx.arc(xcenter,ycenter,radius, 0, 2*Math.PI);
+        ctx.strokeStyle = "#ffffff";
+        ctx.stroke();
+        
+        // velocity line
+        ctx.beginPath();
+        ctx.moveTo(xcenter,ycenter);
+        ctx.lineTo( xcenter + radius * Math.sin(v_azim+n_azim), ycenter - radius * Math.cos(v_azim+n_azim) );
+        ctx.strokeStyle = "#ffc000";
+        ctx.stroke(); 
+
+        // line to destination
+        ctx.beginPath();
+        ctx.moveTo(xcenter, ycenter);
+        ctx.lineTo(xcenter + radius * Math.sin(euclid_azim+n_azim), ycenter - radius * Math.cos(euclid_azim+n_azim) );
+        ctx.strokeStyle = "#ff00ff";
+        ctx.stroke();
+        
+        // North
+        ctx.fillStyle = "#d00000";
+        ctx.font = "50px Arial bold";
+        ctx.fillText("N", xcenter + 0.9 * radius * Math.sin(n_azim)            -20, ycenter - 0.9 * radius * Math.cos(n_azim)            +20);
+        ctx.fillText("E", xcenter + 0.9 * radius * Math.sin(n_azim+0.5*Math.PI)-20, ycenter - 0.9 * radius * Math.cos(n_azim+0.5*Math.PI)+20);
+        ctx.fillText("S", xcenter + 0.9 * radius * Math.sin(n_azim+    Math.PI)-20, ycenter - 0.9 * radius * Math.cos(n_azim+    Math.PI)+20);
+        ctx.fillText("W", xcenter + 0.9 * radius * Math.sin(n_azim+1.5*Math.PI)-20, ycenter - 0.9 * radius * Math.cos(n_azim+1.5*Math.PI)+20);
+        
+    }
+    
+
+
+    function updatePosition(position) {
+        current_lon = position.coords.longitude;
+        current_lat = position.coords.latitude;
+    }
+    
+    function hav(theta) {
+        return Math.pow( Math.sin(0.5 * theta) , 2 )
+    }
+    function angles2distance(lon1_deg,lat1_deg, lon2_deg,lat2_deg ) {
+        var lon1 = lon1_deg * Math.PI / 180.0;
+        var lat1 = lat1_deg * Math.PI / 180.0;
+        var lon2 = lon2_deg * Math.PI / 180.0;
+        var lat2 = lat2_deg * Math.PI / 180.0;
+        var tmp = hav(lat2-lat1) + Math.cos(lat1) * Math.cos(lat2) * hav(lon2-lon1);
+        var d = 2 * r * Math.asin( Math.sqrt(tmp) );
+        return d
+    }
+
+</script>
+
+
+
+</head>
+<body onload="javascript:init()">
+
+
+
+<table>
+    <tr><td>Time</td>                    <td id="time"></td></tr>
+    <tr><td>Current Longitude</td>       <td id="current_lon"></td><td>°</td></tr>
+    <tr><td>Destination Longitude</td>   <td id="dest_lon"></td><td>°</td></tr>
+    <tr><td>Current Latitude</td>        <td id="current_lat"></td><td>°</td></tr>
+    <tr><td>Destination Latitude</td>    <td id="dest_lat"></td><td>°</td></tr>
+    <tr><td>Haversine Distance</td>      <td id="distance"></td><td>km</td></tr>
+    <tr><td>Longitudinal Distance</td>   <td id="lon_distance"></td><td>km</td></tr>
+    <tr><td>Lateral Distance</td>        <td id="lat_distance"></td><td>km</td></tr>
+    <tr><td>Euclidian Distance</td>      <td id="euclid_distance"></td><td>km</td></tr>
+    <tr><td>Euclidian Azimuth to Dest</td><td id="euclid_azim"></td><td>°</td></tr>
+    <tr><td>Longitudinal Velocity</td>   <td id="v_lon"></td><td>km/h</td></tr>
+    <tr><td>Lateral Velocity</td>        <td id="v_lat"></td><td>km/h</td></tr>
+    <tr><td>Euclidian Velocity</td>      <td id="v"></td><td>km/h</td></tr>
+    <tr><td>Euclidian Azimuth of Velocity</td><td id="v_azim"></td><td>°</td></tr>
+</table>
+
+<canvas id="nav_ball_canvas" width="480" height="480">
+</canvas>
+
+
+</body>
+</html>
+
