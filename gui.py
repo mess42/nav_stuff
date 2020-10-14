@@ -14,6 +14,7 @@ class CompassGUI:
 
         self.serial_connection = serial.Serial( port=serial_port, timeout = 0.2 )
         self.serial_connection.isOpen()
+        print("Serial Connection Established.")
         
         self.master = master
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -24,7 +25,7 @@ class CompassGUI:
         self.dest_lon = dest_lon
         self.latest_gps_data = {"time":      "",
                                 "is_active": False,
-                                "latitude":  -50,
+                                "latitude":  50,
                                 "longitude": 12,
                                 "speed":     0,
                                 "azimuth":   0,
@@ -52,6 +53,7 @@ class CompassGUI:
 
     def on_close(self):
         self.serial_connection.close()
+        print("Serial Connection closed.")
         self.master.destroy()
 
     def update_and_redraw_canvas(self):
@@ -233,6 +235,12 @@ class CompassGUI:
         #self.seconds += 1
         #self.label.after(1000, self.update)
 
-root = tk.Tk()
-my_gui = CompassGUI(root, serial_port = "/dev/ttyUSB1")
-root.mainloop()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    my_gui = CompassGUI(root, 
+                        serial_port = "/dev/ttyUSB1",
+                        dest_lat = 50.90837, 
+                        dest_lon = 11.56796,
+                        )
+    root.mainloop()
