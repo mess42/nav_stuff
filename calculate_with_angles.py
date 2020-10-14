@@ -17,21 +17,59 @@ def calc_azim(lat1_deg , lon1_deg , lat2_deg , lon2_deg):
     Positive Longitude means east of London.
     
     @return azim_deg (float)
-    In degree. Ranges from 0 to 360.
-      0 means that Point 2 is north of Point 1.
-     90 means that Point 2 is east  of Point 1.
-    180 means that Point 2 is south of Point 1.
-    270 means that Point 2 is west  of Point 1.
+    In rad. Ranges from 0 to 2*pi.
+      0    means that Point 2 is north of Point 1.
+    0.5 pi means that Point 2 is east  of Point 1.
+        pi means that Point 2 is south of Point 1.
+    1.5 pi means that Point 2 is west  of Point 1.
     """
     
     lat1 = lat1_deg * pi/180
     lat2 = lat2_deg * pi/180
     phi = (lon2_deg-lon1_deg) *pi/180
 
-    ny = np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(phi)
-    nx_plus_nz_squared = (np.cos(lat2) * np.sin(phi))**2
+    # approximation: distance between points 1 and 2 is small compared to earth's curvature
+    azim_rad = np.arctan2(phi * np.cos(lat1), lat2-lat1)
+        
+    return azim_rad
+
+    def hav(theta_rad):
+        """
+        Haversine function.
+        
+        @param theta_rad (float)
+               Angle in rad.
+              
+        @return h (float)
+        """
+        return np.sin(0.5 * theta_rad)**2
     
-    azim_deg = np.arccos( ny / np.sqrt(ny**2+nx_plus_nz_squared) ) * 180 /pi
-    if phi < 0:
-        azim_deg = 360 - azim_deg 
-    return azim_deg
+    def haversine_distance(lat1_deg, lon1_deg, lat2_deg, lon2_deg, r = 6365000 ):
+        """
+        Calculates the air line distance between 2 points on the surface of a sphere.
+
+        When applying the formula to calculations of distances on earth,
+        one is confronted with the fact that earth would be more 
+        accurately modelled by an oblate ellipsoid than by a sphere.
+        The Haversine distance has systematic deviations from the actual distance.
+
+        @param lat1_deg (float) Latitude  of Point 1 in degree.
+        @param lon1_deg (float) Longitude of Point 1 in degree.
+        @param lat2_deg (float) Latitude  of Point 2 in degree.
+        @param lon2_deg (float) Longitude of Point 2 in degree.
+        @param r        (float) Sphere radius.
+                                The default value is an average 
+                                of earth's polar and equatorial radius in meters.
+        
+        @return d (float)
+               Distance between the 2 points. 
+               Unit is the same as the unit of r.
+        """
+        lon1 = lon1_deg * pi / 180.0
+        lat1 = lat1_deg * pi / 180.0
+        lon2 = lon2_deg * pi / 180.0
+        lat2 = lat2_deg * pi / 180.0
+        tmp = hav(lat2-lat1) + np.cos(lat1) * np.cos(lat2) * hav(lon2-lon1)
+        d = 2 * r * np.arcsin( np.sqrt(tmp) )
+        return d
+    
