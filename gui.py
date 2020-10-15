@@ -8,9 +8,10 @@ from numpy import pi
 import tkinter as tk
 
 from calculate_with_angles import calc_azim
+import decode_nmea
 
 class CompassGUI:
-    def __init__(self, master, serial_port, dest_lat = float("nan"), dest_lon = float("nan")):
+    def __init__(self, master, serial_port, dest_lat = 50.90837, dest_lon = 11.56796):
 
         self.serial_connection = serial.Serial( port=serial_port, timeout = 0.2 )
         self.serial_connection.isOpen()
@@ -19,7 +20,8 @@ class CompassGUI:
         self.master = master
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
         
-        self.canvas_width = 300
+        self.canvas_width = 300 # px
+        self.update_delay = 250 # ms
         
         self.dest_lat = dest_lat
         self.dest_lon = dest_lon
@@ -33,9 +35,7 @@ class CompassGUI:
                                 }
         
         self.create_widgets()
-
-        if (not np.isnan(dest_lat)) and (not np.isnan(dest_lon)):
-            self.continuously_update_and_redraw_canvas()
+        self.continuously_update_and_redraw_canvas()
 
     
     def create_widgets(self):
@@ -58,29 +58,31 @@ class CompassGUI:
 
     def update_and_redraw_canvas(self):
         
-        print( self.serial_connection.readline().decode("utf-8") )
-        #self.latest_gps_data = 
-
+        sentence = self.serial_connection.readline().decode("utf-8")
         
-        # Calculate new angles
-        n_azim_rad = pi/8
-        v_azim_rad = self.latest_gps_data["azimuth"] * pi /180.
-        self.dest_azim_rad = calc_azim(lat1_deg = self.latest_gps_data["latitude"], 
-                                  lon1_deg = self.latest_gps_data["longitude"], 
-                                  lat2_deg = self.dest_lat,
-                                  lon2_deg = self.dest_lon,
-                                  )
+        if sentence.startswith("$GPRMC"):
+            self.latest_gps_data =  decode_nmea.decode_gprmc_sentence(sentence)
+            print( self.latest_gps_data )
         
-        # draw
-        self.canvas.delete("all")
-        self.make_nesw(n_azim_rad)
-        self.make_v_marker(v_azim_rad + n_azim_rad )
-        self.make_dest_marker(self.dest_azim_rad + n_azim_rad)
-        self.make_left_text()
+            # Calculate new angles
+            n_azim_rad = 0
+            v_azim_rad = self.latest_gps_data["azimuth"] * pi /180.
+            self.dest_azim_rad = calc_azim(lat1_deg = self.latest_gps_data["latitude"], 
+                                      lon1_deg = self.latest_gps_data["longitude"], 
+                                      lat2_deg = self.dest_lat,
+                                      lon2_deg = self.dest_lon,
+                                      )
+            
+            # draw
+            self.canvas.delete("all")
+            self.make_nesw(n_azim_rad)
+            self.make_v_marker(v_azim_rad + n_azim_rad )
+            self.make_dest_marker(self.dest_azim_rad + n_azim_rad)
+            self.make_left_text()
         
     def continuously_update_and_redraw_canvas(self):
         self.update_and_redraw_canvas()
-        self.canvas.after( 1000, self.continuously_update_and_redraw_canvas )
+        self.canvas.after( self.update_delay, self.continuously_update_and_redraw_canvas )
 
     def make_nesw(self,n_azim):
         w = self.canvas_width
@@ -218,7 +220,6 @@ class CompassGUI:
         if "lat" in latlon and "lon" in latlon:
             self.dest_lon = latlon["lon"]
             self.dest_lat = latlon["lat"]
-            self.continuously_update_and_redraw_canvas()
         else:
             print("failed to read input")
 
@@ -240,7 +241,5 @@ if __name__ == "__main__":
     root = tk.Tk()
     my_gui = CompassGUI(root, 
                         serial_port = "/dev/ttyUSB1",
-                        dest_lat = 50.90837, 
-                        dest_lon = 11.56796,
                         )
     root.mainloop()
