@@ -13,15 +13,17 @@ import decode_nmea
 class CompassGUI:
     def __init__(self, master, serial_port, dest_lat = 50.90837, dest_lon = 11.56796):
 
-        self.serial_connection = serial.Serial( port=serial_port, timeout = 0.2 )
+        self.serial_connection = serial.Serial( port=serial_port, timeout = 1.0 )
         self.serial_connection.isOpen()
         print("Serial Connection Established.")
         
         self.master = master
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
-        
-        self.canvas_width = 300 # px
-        self.update_delay = 250 # ms
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+             
+        self.canvas_width = min(screen_width,screen_height)
+        self.update_delay = 50 # ms
         
         self.dest_lat = dest_lat
         self.dest_lon = dest_lon
