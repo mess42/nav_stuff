@@ -83,3 +83,9 @@ def decode_gprmc_sentence(sentence):
            "date": data[8],
            }
     return dec
+
+
+if __name__ == "__main__":
+    
+    sentence = "$GPRMC,,V,,,,,,,,,,"
+    print( decode_gprmc_sentence(sentence) )
