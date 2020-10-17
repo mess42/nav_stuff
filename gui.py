@@ -54,9 +54,6 @@ class CompassGUI:
         self.search_button = tk.Button(self.master, text="Go!", command=self.search)
         self.search_button.grid(row=0,column=1)
         
-        self.track_canvas = tk.Canvas(self.master, width=self.track_width, height=self.track_width, bg="#ffff00")
-        self.track_canvas.grid(row=1, column=0, columnspan=2)
-
         self.compass_canvas = tk.Canvas(self.master, width=self.compass_width, height=self.compass_width, bg="black")
         self.compass_canvas.grid(row=2, column=0, columnspan=2)
 
@@ -75,26 +72,23 @@ class CompassGUI:
                 self.lat_track  += self.latest_gps_data["latitude"]
                 self.lon_track  += self.latest_gps_data["longitude"]
                 self.time_track += self.latest_gps_data["time"].timestamp()
-        
-            # Calculate new angles
-            n_azim_rad = 0
-            v_azim_rad = self.latest_gps_data["azimuth"] * pi /180.
-            self.dest_azim_rad = calc_azim(lat1_deg = self.latest_gps_data["latitude"], 
+
+                # Calculate new angles
+                n_azim_rad = 0
+                v_azim_rad = self.latest_gps_data["azimuth"] * pi /180.
+                self.dest_azim_rad = calc_azim(lat1_deg = self.latest_gps_data["latitude"], 
                                       lon1_deg = self.latest_gps_data["longitude"], 
                                       lat2_deg = self.dest_lat,
                                       lon2_deg = self.dest_lon,
                                       )
-            
-            # draw
-            self.compass_canvas.delete("all")
-            self.make_nesw(n_azim_rad)
-            self.make_v_marker(v_azim_rad + n_azim_rad )
-            self.make_dest_marker(self.dest_azim_rad + n_azim_rad)
-            self.make_left_text()
 
-            self.track_canvas.delete("all")
-            self.track_canvas.create_text(50,50, text= "tracks:" + str(len(self.lat_track)), fill="black")
-        
+                # draw
+                self.compass_canvas.delete("all")
+                self.make_nesw(n_azim_rad)
+                self.make_v_marker(v_azim_rad + n_azim_rad )            
+                self.make_dest_marker(self.dest_azim_rad + n_azim_rad)
+                self.make_left_text()
+                
     def continuously_update_and_redraw_canvas(self):
         self.update_and_redraw_canvas()
         self.compass_canvas.after( self.update_delay, self.continuously_update_and_redraw_canvas )
