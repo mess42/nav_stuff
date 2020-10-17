@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import datetime
 
 def raw_angle_to_decimal(raw):
     """
@@ -40,6 +41,20 @@ def raw_to_float(raw):
         flo = float(raw)
     return flo
 
+def raw_to_time(raw_date, raw_time):
+    sec = float(raw_time[4:])
+    time = datetime.datetime(
+                year        = int(raw_date[4:]), 
+                month       = int(raw_date[2:4]), 
+                day         = int(raw_date[:2]), 
+                hour        = int(raw_time[:2]), 
+                minute      = int(raw_time[2:4]), 
+                second      = int(sec), 
+                microsecond = int( 1000000 * (sec % 1))
+                )
+    return time 
+        
+
 def decode_gprmc_sentence(sentence):
     """
     Converts a RMC NMEA sentence to a python dict.
@@ -48,14 +63,12 @@ def decode_gprmc_sentence(sentence):
            sentence must start with "$GPRMC,"
            
     @return dec (dict)
-           keys are:
-           "time": (str) "" or 6 numerical digits.
-                   Time of the GPS fix.
-                   First 2 digits are hours (00 to 23).
-                   Next  2 digits are minutes (00 to 59).
-                   Last  2 digits are seconds (00 to 59).
+           keys always present are:
            "is_active" (bool)
                    GPS device was able to get an active location fix.
+                   
+           optional keys are:
+           "time": (datetime.datetime object)
            "latitude" (float)
                    in degree.
                    Ranges from -90 (south pole) to +90 (north pole).
@@ -66,22 +79,19 @@ def decode_gprmc_sentence(sentence):
                    speed above ground in m/s.
            "azimuth" (float)
                    angle of the velocity track.
-           "date" (str) "" or 6 numerical digits.
-                   Date of the GPS fix.
-                   First 2 digits are day (01 to 31).
-                   Next  2 digits are month (01 to 12).
-                   Last  2 digits are year.
+
     """
     data = sentence[:-3].split(",")[1:]
+
+    dec = {"is_active": ( data[1] == "A" ) }
     
-    dec = {"time": data[0],
-           "is_active": ( data[1] == "A" ),
-           "latitude":  raw_angle_to_decimal( data[2] ) * (1 - 2 * (data[3] == "S") ),
-           "longitude": raw_angle_to_decimal( data[4] ) * (1 - 2 * (data[5] == "W") ),
-           "speed": raw_to_float(data[6]) * 1.852 / 3.6,
-           "azimuth": raw_to_float(data[7]),
-           "date": data[8],
-           }
+    if dec["is_active"]:
+        dec["time"]      = raw_to_time(raw_date = data[8], raw_time = data[0])
+        dec["latitude"]  = raw_angle_to_decimal( data[2] ) * (1 - 2 * (data[3] == "S") )
+        dec["longitude"] = raw_angle_to_decimal( data[4] ) * (1 - 2 * (data[5] == "W") )
+        dec["speed"]     = raw_to_float(data[6]) * 1.852 / 3.6
+        dec["azimuth"]   = raw_to_float(data[7])
+
     return dec
 
 

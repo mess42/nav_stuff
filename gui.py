@@ -13,23 +13,34 @@ import decode_nmea
 class CompassGUI:
     def __init__(self, master, serial_port, dest_lat = 50.90837, dest_lon = 11.56796):
 
-        self.serial_connection = serial.Serial( port=serial_port, timeout = 1.0 )
-        self.serial_connection.isOpen()
-        print("Serial Connection Established.")
-        
+        # Tkinter and resolution
         self.master = master
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
         self.screen_width = self.master.winfo_screenwidth()
         self.screen_height = self.master.winfo_screenheight()
-             
         self.compass_width = min(self.screen_width,self.screen_height)
+        self.track_width = self.compass_width
+        
+        # Update rate
         self.update_delay = 50 # ms
         
+        # Current navigation data
         self.dest_lat = dest_lat
         self.dest_lon = dest_lon
         self.latest_gps_data = decode_nmea.decode_gprmc_sentence("$GPRMC,,V,,,,,,,,,,")
-        self.gps_track = []
         
+        # Trajectory tracking since app start
+        self.lat_track = []
+        self.lon_track = []
+        self.time_track = []
+
+        
+        # Start serial connection to read NMEA
+        self.serial_connection = serial.Serial( port=serial_port, timeout = 1.0 )
+        self.serial_connection.isOpen()
+        print("Serial Connection Established.")
+        
+        # create GUI widgets
         self.create_widgets()
         self.continuously_update_and_redraw_canvas()
 
@@ -43,23 +54,15 @@ class CompassGUI:
         self.search_button = tk.Button(self.master, text="Go!", command=self.search)
         self.search_button.grid(row=0,column=1)
         
+        self.track_canvas = tk.Canvas(self.master, width=self.track_width, height=self.track_width, bg="#ffff00")
+        self.track_canvas.grid(row=1, column=0, columnspan=2)
+
         self.compass_canvas = tk.Canvas(self.master, width=self.compass_width, height=self.compass_width, bg="black")
-                
-        self.compass_canvas.grid(row=1, column=0, columnspan=2)
+        self.compass_canvas.grid(row=2, column=0, columnspan=2)
 
     def on_close(self):
         self.serial_connection.close()
-        print("Serial Connection closed.")
-        import matplotlib.pyplot as plt
-        lat_track = list(t["latitude"] for t in self.gps_track)
-        lon_track = list(t["longitude"] for t in self.gps_track)
-        
-        plt.figure()
-        plt.plot(lon_track,lat_track)
-        plt.xlabel("longitude (deg)")
-        plt.ylabel("latitude (deg)")
-        plt.show()
-        
+        print("Serial Connection closed.")        
         self.master.destroy()
 
     def update_and_redraw_canvas(self):
@@ -69,7 +72,9 @@ class CompassGUI:
         if sentence.startswith("$GPRMC"):
             self.latest_gps_data =  decode_nmea.decode_gprmc_sentence(sentence)
             if self.latest_gps_data["is_active"]:
-                self.gps_track.append(self.latest_gps_data)
+                self.lat_track  += self.latest_gps_data["latitude"]
+                self.lon_track  += self.latest_gps_data["longitude"]
+                self.time_track += self.latest_gps_data["time"].timestamp()
         
             # Calculate new angles
             n_azim_rad = 0
@@ -86,6 +91,9 @@ class CompassGUI:
             self.make_v_marker(v_azim_rad + n_azim_rad )
             self.make_dest_marker(self.dest_azim_rad + n_azim_rad)
             self.make_left_text()
+
+            self.track_canvas.delete("all")
+            self.track_canvas.create_text((50,50, text= "tracks:" + str(len(self.lat_track)), fill="black")
         
     def continuously_update_and_redraw_canvas(self):
         self.update_and_redraw_canvas()
