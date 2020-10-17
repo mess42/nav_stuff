@@ -93,7 +93,7 @@ class CompassGUI:
             self.make_left_text()
 
             self.track_canvas.delete("all")
-            self.track_canvas.create_text((50,50, text= "tracks:" + str(len(self.lat_track)), fill="black")
+            self.track_canvas.create_text(50,50, text= "tracks:" + str(len(self.lat_track)), fill="black")
         
     def continuously_update_and_redraw_canvas(self):
         self.update_and_redraw_canvas()
