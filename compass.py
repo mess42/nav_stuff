@@ -30,9 +30,10 @@ class CompassGUI:
         self.latest_gps_data = decode_nmea.decode_gprmc_sentence("$GPRMC,,V,,,,,,,,,,")
         
         # Trajectory tracking since app start
-        self.lat_track = []
-        self.lon_track = []
-        self.time_track = []
+        nan = float("nan")
+        self.lat_track = [nan,nan]
+        self.lon_track = [nan,nan]
+        self.time_track = [nan,nan]
 
         
         # Start serial connection to read NMEA
@@ -75,8 +76,15 @@ class CompassGUI:
 
                 # Calculate new angles
                 n_azim_rad = 0
-                v_azim_rad = self.latest_gps_data["azimuth"] * pi /180.
-                self.dest_azim_rad = calc_azim(lat1_deg = self.latest_gps_data["latitude"], 
+                
+                self.v_azim_rad = calc_azim(
+                                      lat1_deg = self.lat_track[-2], 
+                                      lon1_deg = self.lon_track[-2], 
+                                      lat2_deg = self.lat_track[-1],
+                                      lon2_deg = self.lon_track[-1],
+                                      )
+                self.dest_azim_rad = calc_azim(
+                                      lat1_deg = self.latest_gps_data["latitude"], 
                                       lon1_deg = self.latest_gps_data["longitude"], 
                                       lat2_deg = self.dest_lat,
                                       lon2_deg = self.dest_lon,
@@ -85,7 +93,7 @@ class CompassGUI:
                 # draw
                 self.compass_canvas.delete("all")
                 self.make_nesw(n_azim_rad)
-                self.make_v_marker(v_azim_rad + n_azim_rad )            
+                self.make_v_marker(self.v_azim_rad + n_azim_rad )            
                 self.make_dest_marker(self.dest_azim_rad + n_azim_rad)
                 self.make_left_text()
                 
