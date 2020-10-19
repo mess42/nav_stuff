@@ -45,8 +45,10 @@ class CompassGUI:
     
     def create_widgets(self):
         self.master.title("Compass")
-                
-        self.destination_entry = tk.Entry(self.master, text="hello world")
+        
+        init_txt = self.latlon2str(lat = self.dest_lat,lon = self.dest_lon)
+        self.destination_entry = tk.Entry(self.master)
+        self.destination_entry.insert(0,init_txt)
         self.destination_entry.grid(row=0, column=0)
 
         self.search_button = tk.Button(self.master, text="Go!", command=self.search)
@@ -232,7 +234,14 @@ class CompassGUI:
         else:
             print("failed to read input")
 
-
+    def latlon2str(self,lat,lon):
+        lat_str = "N"
+        if lat < 0:
+            lat_str = "S"
+        lon_str = "W"
+        if lon < 0:
+            lon_str = "E"
+        return str(abs(lat)) + lat_str + " " + str(abs(lon)) + lon_str
       
 
 if __name__ == "__main__":
