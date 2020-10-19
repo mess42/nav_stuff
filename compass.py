@@ -70,9 +70,9 @@ class CompassGUI:
         if sentence.startswith("$GPRMC"):
             self.latest_gps_data =  decode_nmea.decode_gprmc_sentence(sentence)
             if self.latest_gps_data["is_active"]:
-                self.lat_track  += self.latest_gps_data["latitude"]
-                self.lon_track  += self.latest_gps_data["longitude"]
-                self.time_track += self.latest_gps_data["time"].timestamp()
+                self.lat_track  += [self.latest_gps_data["latitude"]]
+                self.lon_track  += [self.latest_gps_data["longitude"]]
+                self.time_track += [self.latest_gps_data["time"].timestamp()]
 
                 # Calculate new angles
                 n_azim_rad = 0
