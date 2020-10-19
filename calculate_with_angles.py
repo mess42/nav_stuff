@@ -33,43 +33,91 @@ def calc_azim(lat1_deg , lon1_deg , lat2_deg , lon2_deg):
         
     return azim_rad
 
-    def hav(theta_rad):
-        """
-        Haversine function.
-        
-        @param theta_rad (float)
-               Angle in rad.
+def hav(theta_rad):
+    """
+    Haversine function.
+    
+    @param theta_rad (float)
+           Angle in rad.
+          
+    @return h (float)
+    """
+    return np.sin(0.5 * theta_rad)**2
+
+def haversine_distance(lat1_deg, lon1_deg, lat2_deg, lon2_deg, r = 6365000 ):
+    """
+    Calculates the air line distance between 2 points on the surface of a sphere.
+
+    When applying the formula to calculations of distances on earth,
+    one is confronted with the fact that earth would be more 
+    accurately modelled by an oblate ellipsoid than by a sphere.
+    The Haversine distance has systematic deviations from the actual distance.
+
+    @param lat1_deg (float) Latitude  of Point 1 in degree.
+    @param lon1_deg (float) Longitude of Point 1 in degree.
+    @param lat2_deg (float) Latitude  of Point 2 in degree.
+    @param lon2_deg (float) Longitude of Point 2 in degree.
+    @param r        (float) Sphere radius.
+                            The default value is an average 
+                            of earth's polar and equatorial radius in meters.
+    
+    @return d (float)
+           Distance between the 2 points. 
+           Unit is the same as the unit of r.
+    """
+    lon1 = lon1_deg * pi / 180.0
+    lat1 = lat1_deg * pi / 180.0
+    lon2 = lon2_deg * pi / 180.0
+    lat2 = lat2_deg * pi / 180.0
+    tmp = hav(lat2-lat1) + np.cos(lat1) * np.cos(lat2) * hav(lon2-lon1)
+    d = 2 * r * np.arcsin( np.sqrt(tmp) )
+    return d
+
+def calc_regression_slope(x,y):
+    """
+    @brief: makes a linear regression and delivers the slope.
+    
+    @param x: (1d numpy array of float)
+              Data point x-values.
+    @peram y: (1d numpy array of float)
+              Data point y-values
+              Array must have same shape as x.
               
-        @return h (float)
-        """
-        return np.sin(0.5 * theta_rad)**2
+    Regression model is y = m * x + n
+    where m and n are optimised for minimum square error compared to the data points.
     
-    def haversine_distance(lat1_deg, lon1_deg, lat2_deg, lon2_deg, r = 6365000 ):
-        """
-        Calculates the air line distance between 2 points on the surface of a sphere.
+    @return m: (float)
+               Slope of the linear reagression.
+    """
+    N = len(x)
+    m = (sum(x*y) - sum(x)*sum(y)/N) / (sum(x**2) - (sum(x))**2/N)
+    return m
 
-        When applying the formula to calculations of distances on earth,
-        one is confronted with the fact that earth would be more 
-        accurately modelled by an oblate ellipsoid than by a sphere.
-        The Haversine distance has systematic deviations from the actual distance.
-
-        @param lat1_deg (float) Latitude  of Point 1 in degree.
-        @param lon1_deg (float) Longitude of Point 1 in degree.
-        @param lat2_deg (float) Latitude  of Point 2 in degree.
-        @param lon2_deg (float) Longitude of Point 2 in degree.
-        @param r        (float) Sphere radius.
-                                The default value is an average 
-                                of earth's polar and equatorial radius in meters.
+def calc_speed( lat_track, lon_track, time_track, no_datapoints_for_average = 5):
+    if len(time_track) >= no_datapoints_for_average:
+        dlat_per_dt = calc_regression_slope(
+                         x=time_track[-no_datapoints_for_average:],
+                         y=lat_track[-no_datapoints_for_average:]
+                         )
+        dlon_per_dt = calc_regression_slope(
+                         x=time_track[-no_datapoints_for_average:],
+                         y=lon_track[-no_datapoints_for_average:]
+                         )
+    else:
+        dlat_per_dt = 0
+        dlon_per_dt = 0
         
-        @return d (float)
-               Distance between the 2 points. 
-               Unit is the same as the unit of r.
-        """
-        lon1 = lon1_deg * pi / 180.0
-        lat1 = lat1_deg * pi / 180.0
-        lon2 = lon2_deg * pi / 180.0
-        lat2 = lat2_deg * pi / 180.0
-        tmp = hav(lat2-lat1) + np.cos(lat1) * np.cos(lat2) * hav(lon2-lon1)
-        d = 2 * r * np.arcsin( np.sqrt(tmp) )
-        return d
-    
+    v_azim_in_rad = calc_azim(
+                          lat1_deg = lat_track[-1], 
+                          lon1_deg = lon_track[-1], 
+                          lat2_deg = lat_track[-1]+dlat_per_dt,
+                          lon2_deg = lon_track[-1]+dlon_per_dt,
+                          )
+    abs_v_in_m_per_s = haversine_distance(
+                          lat1_deg = lat_track[-1], 
+                          lon1_deg = lon_track[-1], 
+                          lat2_deg = lat_track[-1]+dlat_per_dt,
+                          lon2_deg = lon_track[-1]+dlon_per_dt,
+                          )
+
+    return dlat_per_dt, dlon_per_dt, v_azim_in_rad, abs_v_in_m_per_s

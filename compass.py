@@ -7,7 +7,7 @@ import numpy as np
 from numpy import pi
 import tkinter as tk
 
-from calculate_with_angles import calc_azim
+from calculate_with_angles import calc_azim, calc_speed
 import decode_nmea
 
 class CompassGUI:
@@ -19,7 +19,6 @@ class CompassGUI:
         self.screen_width = self.master.winfo_screenwidth()
         self.screen_height = self.master.winfo_screenheight()
         self.compass_width = min(self.screen_width,self.screen_height)
-        self.track_width = self.compass_width
         
         # Update rate
         self.update_delay = 50 # ms
@@ -30,11 +29,9 @@ class CompassGUI:
         self.latest_gps_data = decode_nmea.decode_gprmc_sentence("$GPRMC,,V,,,,,,,,,,")
         
         # Trajectory tracking since app start
-        nan = float("nan")
-        self.lat_track = [nan,nan]
-        self.lon_track = [nan,nan]
-        self.time_track = [nan,nan]
-
+        self.lat_track = []
+        self.lon_track = []
+        self.time_track = []
         
         # Start serial connection to read NMEA
         self.serial_connection = serial.Serial( port=serial_port, timeout = 1.0 )
@@ -49,7 +46,7 @@ class CompassGUI:
     def create_widgets(self):
         self.master.title("Compass")
                 
-        self.destination_entry = tk.Entry(self.master)
+        self.destination_entry = tk.Entry(self.master, text="hello world")
         self.destination_entry.grid(row=0, column=0)
 
         self.search_button = tk.Button(self.master, text="Go!", command=self.search)
@@ -77,13 +74,12 @@ class CompassGUI:
                 # Calculate new angles
                 n_azim_rad = 0
                 
-                self.v_azim_rad = calc_azim(
-                                      lat1_deg = self.lat_track[-2], 
-                                      lon1_deg = self.lon_track[-2], 
-                                      lat2_deg = self.lat_track[-1],
-                                      lon2_deg = self.lon_track[-1],
+                dlat_per_dt, dlon_per_dt, v_azim_in_rad, abs_v_in_m_per_s = calc_speed( 
+                                      lat_track  = self.lat_track, 
+                                      lon_track  = self.lon_track, 
+                                      time_track = self.time_track
                                       )
-                self.dest_azim_rad = calc_azim(
+                dest_azim_in_rad = calc_azim(
                                       lat1_deg = self.latest_gps_data["latitude"], 
                                       lon1_deg = self.latest_gps_data["longitude"], 
                                       lat2_deg = self.dest_lat,
@@ -93,8 +89,8 @@ class CompassGUI:
                 # draw
                 self.compass_canvas.delete("all")
                 self.make_nesw(n_azim_rad)
-                self.make_v_marker(self.v_azim_rad + n_azim_rad )            
-                self.make_dest_marker(self.dest_azim_rad + n_azim_rad)
+                self.make_v_marker(v_azim_in_rad + n_azim_rad )            
+                self.make_dest_marker(dest_azim_in_rad + n_azim_rad)
                 self.make_left_text()
                 
     def continuously_update_and_redraw_canvas(self):
@@ -204,10 +200,6 @@ class CompassGUI:
         s = "GPS data:\n"
         for key in self.latest_gps_data:
             s += key + " : " + str(self.latest_gps_data[key]) + "\n"
-        s += "\n\nDestination data:\n"
-        s += "latitude : " + str(self.dest_lat) + "\n"
-        s += "longitude : " + str(self.dest_lon) + "\n"
-        s += "azimuth : " + str(self.dest_azim_rad *180/pi)
         self.compass_canvas.create_text(5, 0, text= s , font=("Arial", 10), anchor=tk.NW, fill="red")
 
 
