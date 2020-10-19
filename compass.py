@@ -79,7 +79,7 @@ class CompassGUI:
                 dlat_per_dt, dlon_per_dt, v_azim_in_rad, abs_v_in_m_per_s = calc_speed( 
                                       lat_track  = self.lat_track, 
                                       lon_track  = self.lon_track, 
-                                      time_track = self.time_track
+                                      time_track = np.array(self.time_track)-self.time_track[-1]
                                       )
                 dest_azim_in_rad = calc_azim(
                                       lat1_deg = self.latest_gps_data["latitude"], 

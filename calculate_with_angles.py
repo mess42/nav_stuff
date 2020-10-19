@@ -89,6 +89,8 @@ def calc_regression_slope(x,y):
     @return m: (float)
                Slope of the linear reagression.
     """
+    x = np.array(x)
+    y = np.array(y)
     N = len(x)
     m = (sum(x*y) - sum(x)*sum(y)/N) / (sum(x**2) - (sum(x))**2/N)
     return m
