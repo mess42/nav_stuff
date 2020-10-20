@@ -7,7 +7,7 @@ import numpy as np
 from numpy import pi
 import tkinter as tk
 
-from calculate_with_angles import calc_azim, calc_speed
+from calculate_with_angles import calc_azim, calc_speed, haversine_distance
 import decode_nmea
 
 class CompassGUI:
@@ -73,9 +73,7 @@ class CompassGUI:
                 self.lon_track  += [self.latest_gps_data["longitude"]]
                 self.time_track += [self.latest_gps_data["time"].timestamp()]
 
-                # Calculate new angles
-                n_azim_rad = 0
-                
+                # Calculate new angles                
                 dlat_per_dt, dlon_per_dt, v_azim_in_rad, abs_v_in_m_per_s = calc_speed( 
                                       lat_track  = self.lat_track, 
                                       lon_track  = self.lon_track, 
@@ -87,6 +85,16 @@ class CompassGUI:
                                       lat2_deg = self.dest_lat,
                                       lon2_deg = self.dest_lon,
                                       )
+                dest_distance = haversine_distance(
+                                      lat1_deg = self.latest_gps_data["latitude"], 
+                                      lon1_deg = self.latest_gps_data["longitude"], 
+                                      lat2_deg = self.dest_lat,
+                                      lon2_deg = self.dest_lon,
+                                      )
+
+                
+                # turn compass rose so that velocity points up
+                n_azim_rad = - v_azim_in_rad
 
                 # draw
                 self.compass_canvas.delete("all")
@@ -94,6 +102,12 @@ class CompassGUI:
                 self.make_v_marker(v_azim_in_rad + n_azim_rad )            
                 self.make_dest_marker(dest_azim_in_rad + n_azim_rad)
                 self.make_left_text()
+                
+                speed_str = str(round(abs_v_in_m_per_s * 3.6,1)) + " km/h"
+                self.compass_canvas.create_text(.5*self.compass_width, .5*self.compass_width, text= speed_str , font=("Arial", int(round(self.compass_width/13.6))), anchor=tk.N, fill="#ffff00")
+                dist_str = str(round( dest_distance/1000.0 ,1)) + " km"
+                self.compass_canvas.create_text(.5*self.compass_width, .6*self.compass_width, text= dist_str , font=("Arial", int(round(self.compass_width/13.6))), anchor=tk.N, fill="#ff00ff")
+
                 
     def continuously_update_and_redraw_canvas(self):
         self.update_and_redraw_canvas()

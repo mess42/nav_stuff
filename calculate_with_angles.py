@@ -93,7 +93,7 @@ def calc_regression_slope(x,y):
     m = (sum(x*y) - sum(x)*sum(y)/N) / (sum(x**2) - (sum(x))**2/N)
     return m
 
-def calc_speed( lat_track, lon_track, time_track, no_datapoints_for_average = 5):
+def calc_speed( lat_track, lon_track, time_track, no_datapoints_for_average = 4):
     if len(time_track) >= no_datapoints_for_average:
         dlat = np.array(lat_track[-no_datapoints_for_average:])  - lat_track[-1]
         dlon = np.array(lon_track[-no_datapoints_for_average:])  - lon_track[-1]
