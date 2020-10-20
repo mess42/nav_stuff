@@ -89,22 +89,17 @@ def calc_regression_slope(x,y):
     @return m: (float)
                Slope of the linear reagression.
     """
-    x = np.array(x)
-    y = np.array(y)
     N = len(x)
     m = (sum(x*y) - sum(x)*sum(y)/N) / (sum(x**2) - (sum(x))**2/N)
     return m
 
 def calc_speed( lat_track, lon_track, time_track, no_datapoints_for_average = 5):
     if len(time_track) >= no_datapoints_for_average:
-        dlat_per_dt = calc_regression_slope(
-                         x=time_track[-no_datapoints_for_average:],
-                         y=lat_track[-no_datapoints_for_average:]
-                         )
-        dlon_per_dt = calc_regression_slope(
-                         x=time_track[-no_datapoints_for_average:],
-                         y=lon_track[-no_datapoints_for_average:]
-                         )
+        dlat = np.array(lat_track[-no_datapoints_for_average:])  - lat_track[-1]
+        dlon = np.array(lon_track[-no_datapoints_for_average:])  - lon_track[-1]
+        dt   = np.array(time_track[-no_datapoints_for_average:]) - time_track[-1]
+        dlat_per_dt = calc_regression_slope( x=dt, y=dlat )
+        dlon_per_dt = calc_regression_slope( x=dt, y=dlon )
     else:
         dlat_per_dt = 0
         dlon_per_dt = 0
