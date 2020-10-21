@@ -48,19 +48,21 @@ class CompassGUI:
         self.master.title("Compass")
         
         init_txt = self.latlon2str(lat = self.dest_lat,lon = self.dest_lon)
-        self.destination_entry = tk.Entry(self.master)
-        self.destination_entry.insert(0,init_txt)
-        self.destination_entry.grid(row=0, column=0)
-
-        self.search_button = tk.Button(self.master, text="Go!", command=self.search)
-        self.search_button.grid(row=0,column=1)
+        self.destination_entry = tk.Entry(self.master, width=int(0.1*self.compass_width))
         
+        self.search_button = tk.Button(self.master, text="Go to", command=self.search)
+        self.search_button.grid(row=0, column=1,sticky=tk.E)
+
         self.status_text = tk.StringVar()
         self.status_label = tk.Label(self.master, textvariable = self.status_text)
         self.status_label.grid(row=1, column=0, columnspan=2)
         
         self.compass_canvas = tk.Canvas(self.master, width=self.compass_width, height=self.compass_width, bg="black")
         self.compass_canvas.grid(row=2, column=0, columnspan=2)
+
+        self.destination_entry.insert(0,init_txt)
+        self.destination_entry.grid(row=0, column=0, sticky=tk.W)
+
 
     def on_close(self):
         self.serial_connection.close()
