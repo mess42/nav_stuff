@@ -27,6 +27,7 @@ class CompassGUI:
         self.dest_lat = dest_lat
         self.dest_lon = dest_lon
         self.latest_gps_data = decode_nmea.decode_gprmc_sentence("$GPRMC,,V,,,,,,,,,,")
+        self.void_sentences = 0
         
         # Trajectory tracking since app start
         self.lat_track = []
@@ -54,6 +55,10 @@ class CompassGUI:
         self.search_button = tk.Button(self.master, text="Go!", command=self.search)
         self.search_button.grid(row=0,column=1)
         
+        self.status_text = tk.StringVar()
+        self.status_label = tk.Label(self.master, textvariable = self.status_text)
+        self.status_label.grid(row=1, column=0, columnspan=2)
+        
         self.compass_canvas = tk.Canvas(self.master, width=self.compass_width, height=self.compass_width, bg="black")
         self.compass_canvas.grid(row=2, column=0, columnspan=2)
 
@@ -68,17 +73,26 @@ class CompassGUI:
         
         if sentence.startswith("$GPRMC"):
             self.latest_gps_data =  decode_nmea.decode_gprmc_sentence(sentence)
-            if self.latest_gps_data["is_active"]:
+            if not self.latest_gps_data["is_active"]:
+                self.void_sentences += 1
+                self.status_text.set("Waiting for GPS fix.\nVoid GPRMC sentences received:\n"+ str(self.void_sentences))
+            else:
+                self.status_text.set("GPS fix active.")
                 self.lat_track  += [self.latest_gps_data["latitude"]]
                 self.lon_track  += [self.latest_gps_data["longitude"]]
                 self.time_track += [self.latest_gps_data["time"].timestamp()]
 
-                # Calculate new angles                
+                # Calculate new angles
+                """
                 dlat_per_dt, dlon_per_dt, v_azim_in_rad, abs_v_in_m_per_s = calc_speed( 
                                       lat_track  = self.lat_track, 
                                       lon_track  = self.lon_track, 
                                       time_track = self.time_track
                                       )
+                """
+                v_azim_in_rad = self.latest_gps_data["azimuth"] * pi / 180
+                abs_v_in_m_per_s = self.latest_gps_data["speed"]
+                
                 dest_azim_in_rad = calc_azim(
                                       lat1_deg = self.latest_gps_data["latitude"], 
                                       lon1_deg = self.latest_gps_data["longitude"], 
@@ -92,7 +106,6 @@ class CompassGUI:
                                       lon2_deg = self.dest_lon,
                                       )
 
-                
                 # turn compass rose so that velocity points up
                 n_azim_rad = - v_azim_in_rad
 
