@@ -29,7 +29,15 @@ x,y = deg2num(lat_deg=lat, lon_deg=lon, zoom=zoom)
 
 osm_url = "https://tile.openstreetmap.org/" + str(zoom) + "/" + str(x) + "/" + str(y) + ".png"
 
-osm_scout_url = "http://localhost:8553/v1/tile?z=" + str(zoom) + "&x=" + str(x) + "&y=" + str(y)
+osm_scout_url  = "http://localhost:8553/v1/tile?"
+# style={style}
+osm_scout_url += "daylight=1"
+osm_scout_url += "&shift=0"
+osm_scout_url += "&scale=1"
+osm_scout_url += "&z=" + str(zoom)
+osm_scout_url += "&x=" + str(x)
+osm_scout_url += "&y=" + str(y)
+
 
 page  = "<img src=\"" + osm_url + "\">"
 page += "<br>osm<br><br>"
