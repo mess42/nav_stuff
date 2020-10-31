@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import serial
 
 import numpy as np
 from numpy import pi
 import tkinter as tk
 
-from calculate_with_angles import calc_azim, calc_speed, haversine_distance
-import decode_nmea
+from calculate_with_angles import calc_azim, haversine_distance
+import position
 
 class CompassGUI:
     def __init__(self, master, serial_port, dest_lat = 50.90837, dest_lon = 11.56796):
@@ -26,8 +25,6 @@ class CompassGUI:
         # Current navigation data
         self.dest_lat = dest_lat
         self.dest_lon = dest_lon
-        self.latest_gps_data = decode_nmea.decode_gprmc_sentence("$GPRMC,,V,,,,,,,,,,")
-        self.void_sentences = 0
         
         # Trajectory tracking since app start
         self.lat_track = []
@@ -35,9 +32,7 @@ class CompassGUI:
         self.time_track = []
         
         # Start serial connection to read NMEA
-        self.serial_connection = serial.Serial( port=serial_port, timeout = 1.0 )
-        self.serial_connection.isOpen()
-        print("Serial Connection Established.")
+        self.nmea_provider = position.PositionSerialNMEA(serial_port = serial_port)
         
         # create GUI widgets
         self.create_widgets()
@@ -65,63 +60,55 @@ class CompassGUI:
 
 
     def on_close(self):
-        self.serial_connection.close()
-        print("Serial Connection closed.")        
+        self.nmea_provider.disconnect()        
         self.master.destroy()
 
     def update_and_redraw_canvas(self):
-        
-        sentence = self.serial_connection.readline().decode("utf-8")
-        
-        if sentence.startswith("$GPRMC"):
-            self.latest_gps_data =  decode_nmea.decode_gprmc_sentence(sentence)
-            if not self.latest_gps_data["is_active"]:
-                self.void_sentences += 1
-                self.status_text.set("Waiting for GPS fix.\nVoid GPRMC sentences received:\n"+ str(self.void_sentences))
-            else:
-                self.status_text.set("GPS fix active.")
-                self.lat_track  += [self.latest_gps_data["latitude"]]
-                self.lon_track  += [self.latest_gps_data["longitude"]]
-                self.time_track += [self.latest_gps_data["time"].timestamp()]
-
-                # Calculate new angles
-                """
-                dlat_per_dt, dlon_per_dt, v_azim_in_rad, abs_v_in_m_per_s = calc_speed( 
-                                      lat_track  = self.lat_track, 
-                                      lon_track  = self.lon_track, 
-                                      time_track = self.time_track
-                                      )
-                """
-                v_azim_in_rad = self.latest_gps_data["azimuth"] * pi / 180
-                abs_v_in_m_per_s = self.latest_gps_data["speed"]
                 
-                dest_azim_in_rad = calc_azim(
-                                      lat1_deg = self.latest_gps_data["latitude"], 
-                                      lon1_deg = self.latest_gps_data["longitude"], 
-                                      lat2_deg = self.dest_lat,
-                                      lon2_deg = self.dest_lon,
-                                      )
-                dest_distance = haversine_distance(
-                                      lat1_deg = self.latest_gps_data["latitude"], 
-                                      lon1_deg = self.latest_gps_data["longitude"], 
-                                      lat2_deg = self.dest_lat,
-                                      lon2_deg = self.dest_lon,
-                                      )
+        if self.nmea_provider.update_position():
+            self.status_text.set("GPS fix active.")
+            self.lat_track  += self.nmea_provider.latitude
+            self.lon_track  += self.nmea_provider.longitude
+            self.time_track += self.nmea_provider.time
+            
+            # Calculate new angles
+            """
+            dlat_per_dt, dlon_per_dt, v_azim_in_rad, abs_v_in_m_per_s = calc_speed( 
+                                  lat_track  = self.lat_track, 
+                                  lon_track  = self.lon_track, 
+                                  time_track = self.time_track
+                                  )
+            """
+            v_azim_in_rad = self.nmea_provider.azimuth * pi / 180
+            abs_v_in_m_per_s = self.nmea_provider.velocity
+            
+            dest_azim_in_rad = calc_azim(
+                                  lat1_deg = self.nmea_provider.latitude, 
+                                  lon1_deg = self.nmea_provider.longitude, 
+                                  lat2_deg = self.dest_lat,
+                                  lon2_deg = self.dest_lon,
+                                  )
+            dest_distance = haversine_distance(
+                                  lat1_deg = self.nmea_provider.latitude, 
+                                  lon1_deg = self.nmea_provider.longitude, 
+                                  lat2_deg = self.dest_lat,
+                                  lon2_deg = self.dest_lon,
+                                  )
 
-                # turn compass rose so that velocity points up
-                n_azim_rad = - v_azim_in_rad
+            # turn compass rose so that velocity points up
+            n_azim_rad = - v_azim_in_rad
 
-                # draw
-                self.compass_canvas.delete("all")
-                self.make_nesw(n_azim_rad)
-                self.make_v_marker(v_azim_in_rad + n_azim_rad )            
-                self.make_dest_marker(dest_azim_in_rad + n_azim_rad)
-                self.make_left_text()
-                
-                speed_str = str(round(abs_v_in_m_per_s * 3.6,1)) + " km/h"
-                self.compass_canvas.create_text(.5*self.compass_width, .5*self.compass_width, text= speed_str , font=("Arial", int(round(self.compass_width/13.6))), anchor=tk.N, fill="#ffff00")
-                dist_str = str(round( dest_distance/1000.0 ,1)) + " km"
-                self.compass_canvas.create_text(.5*self.compass_width, .6*self.compass_width, text= dist_str , font=("Arial", int(round(self.compass_width/13.6))), anchor=tk.N, fill="#ff00ff")
+            # draw
+            self.compass_canvas.delete("all")
+            self.make_nesw(n_azim_rad)
+            self.make_v_marker(v_azim_in_rad + n_azim_rad )            
+            self.make_dest_marker(dest_azim_in_rad + n_azim_rad)
+            self.make_left_text()
+            
+            speed_str = str(round(abs_v_in_m_per_s * 3.6,1)) + " km/h"
+            self.compass_canvas.create_text(.5*self.compass_width, .5*self.compass_width, text= speed_str , font=("Arial", int(round(self.compass_width/13.6))), anchor=tk.N, fill="#ffff00")
+            dist_str = str(round( dest_distance/1000.0 ,1)) + " km"
+            self.compass_canvas.create_text(.5*self.compass_width, .6*self.compass_width, text= dist_str , font=("Arial", int(round(self.compass_width/13.6))), anchor=tk.N, fill="#ff00ff")
 
                 
     def continuously_update_and_redraw_canvas(self):
