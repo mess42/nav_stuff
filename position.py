@@ -5,6 +5,7 @@
 """
 import serial
 import datetime
+from gi.repository import Geoclue
 
 class PositionProvider(object):
     def __init__(self, **params ):
@@ -13,9 +14,9 @@ class PositionProvider(object):
         """
         self.latitude  = float("nan") # degree, positive is North
         self.longitude = float("nan") # degree, positive is East
-        self.time      = None         # datetime of last sensor update
+        self.time      = 0            # unix timestamp of last sensor update
         self.velocity  = 0            # in m/s
-        self.azimuth   = 0            # azimuth of velocity in degree
+        self.heading   = 0            # heading of velocity in degree
         
         self.is_connected = False
         self.connect( **params )
@@ -58,7 +59,7 @@ class PositionSerialNMEA(PositionProvider):
                 self.latitude  = self.__raw_angle_to_decimal__( data[2] ) * (1 - 2 * (data[3] == "S") )
                 self.longitude = self.__raw_angle_to_decimal__( data[4] ) * (1 - 2 * (data[5] == "W") )
                 self.velocity  = self.__raw_to_float__(data[6]) * 1.852 / 3.6
-                self.azimuth   = self.__raw_to_float__(data[7])
+                self.heading   = self.__raw_to_float__(data[7])
         return is_active
         
     def __raw_to_time__(self, raw_date, raw_time):
@@ -71,7 +72,7 @@ class PositionSerialNMEA(PositionProvider):
                     minute      = int(raw_time[2:4]), 
                     second      = int(sec), 
                     microsecond = int( 1000000 * (sec % 1))
-                    )
+                    ).timestamp()
         return time     
         
     def __raw_angle_to_decimal__(self, raw):
@@ -111,3 +112,29 @@ class PositionSerialNMEA(PositionProvider):
         if len(raw) > 0:
             flo = float(raw)
         return flo
+    
+class PositionGeoClue(PositionProvider):
+    """
+    Thanks to 
+    https://howtotrainyourrobot.com/building-a-mobile-app-for-linux-part-4-gps-mobile-tracking/
+    https://www.freedesktop.org/software/geoclue/docs/libgeoclue/GClueLocation.html
+    """
+
+    def connect(self):
+        self.clue = Geoclue.Simple.new_sync('something',
+                                            Geoclue.AccuracyLevel.NEIGHBORHOOD,
+                                            None
+                                            )
+        
+    def disconnect(self):
+        pass
+        
+    def update_position(self):
+        location = self.clue.get_location()        
+        self.time      = location.get_property("timestamp")
+        self.latitude  = location.get_property('latitude')
+        self.longitude = location.get_property('longitude')
+        self.velocity  = location.get_property("speed")
+        self.heading   = location.get_property("heading")
+        #location.get_property("accuracy") )            
+        return True

@@ -79,7 +79,7 @@ class CompassGUI:
                                   time_track = self.time_track
                                   )
             """
-            v_azim_in_rad = self.nmea_provider.azimuth * pi / 180
+            v_azim_in_rad = self.nmea_provider.heading * pi / 180
             abs_v_in_m_per_s = self.nmea_provider.velocity
             
             dest_azim_in_rad = calc_azim(
