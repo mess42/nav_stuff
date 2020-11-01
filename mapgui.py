@@ -17,15 +17,18 @@ def image2pixbuf(self,im):
 
 class ButtonWindow(Gtk.Window):
     def __init__(self):
+        
+        # Global window initialisation
         Gtk.Window.__init__(self)
         self.connect("destroy", Gtk.main_quit)
-
         self.set_title("Map Demo")
         #self.set_default_size(390, 240)
         self.set_border_width(10)
         
-        self.position_provider = position.PositionSimulation()
+        # Position provider
+        self.position_provider = position.PositionGeoClue()
         
+        # Tile provider
         valid_pos =  False
         while not valid_pos:
             valid_pos = self.position_provider.update_position()
@@ -35,6 +38,7 @@ class ButtonWindow(Gtk.Window):
                                       lon_deg = self.position_provider.longitude
                                       )
 
+        # Create widgets
         self.canvas = Gtk.Overlay().new()
 
         tile_image = Gtk.Image()
@@ -49,7 +53,11 @@ class ButtonWindow(Gtk.Window):
         darea.connect("draw", self.on_draw)
         self.canvas.add_overlay(darea)
 
-        self.add(self.canvas)
+        # pack/grid widgets
+        grid = Gtk.Grid()
+        self.add(grid)
+        grid.add(self.canvas)
+        
         #self.timeout_id = GLib.timeout_add(500, self.on_timeout, None)
     
     #def on_timeout(self, data):
