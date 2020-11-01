@@ -20,6 +20,7 @@ class PositionProvider(object):
         
         self.is_connected = False
         self.connect( **params )
+        self.update_position()
             
     def connect(self, **params):
         raise NotImplementedError()
@@ -125,9 +126,11 @@ class PositionGeoClue(PositionProvider):
                                             Geoclue.AccuracyLevel.NEIGHBORHOOD,
                                             None
                                             )
+        self.is_connected = True
         
     def disconnect(self):
-        pass
+        self.clue = None
+        self.is_connected = False
         
     def update_position(self):
         location = self.clue.get_location()        
@@ -137,4 +140,21 @@ class PositionGeoClue(PositionProvider):
         self.velocity  = location.get_property("speed")
         self.heading   = location.get_property("heading")
         #location.get_property("accuracy") )            
+        return True
+
+    
+class PositionSimulation(PositionProvider):
+
+    def connect(self):
+        self.is_connected = True
+        
+    def disconnect(self):
+        self.is_connected = False
+        
+    def update_position(self):
+        self.time      = datetime.datetime.now().timestamp()
+        self.latitude  = 50.97872
+        self.longitude = 11.3319
+        self.velocity  = 0
+        self.heading   = 0
         return True

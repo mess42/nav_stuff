@@ -31,8 +31,7 @@ class CompassGUI:
         self.lon_track = []
         self.time_track = []
         
-        # Start serial connection to read NMEA
-        self.nmea_provider = position.PositionSerialNMEA(serial_port = serial_port)
+        self.position_provider = position.PositionSerialNMEA(serial_port = serial_port)
         
         # create GUI widgets
         self.create_widgets()
@@ -60,16 +59,16 @@ class CompassGUI:
 
 
     def on_close(self):
-        self.nmea_provider.disconnect()        
+        self.position_provider.disconnect()        
         self.master.destroy()
 
     def update_and_redraw_canvas(self):
                 
-        if self.nmea_provider.update_position():
+        if self.position_provider.update_position():
             self.status_text.set("GPS fix active.")
-            self.lat_track  += self.nmea_provider.latitude
-            self.lon_track  += self.nmea_provider.longitude
-            self.time_track += self.nmea_provider.time
+            self.lat_track  += self.position_provider.latitude
+            self.lon_track  += self.position_provider.longitude
+            self.time_track += self.position_provider.time
             
             # Calculate new angles
             """
@@ -79,18 +78,18 @@ class CompassGUI:
                                   time_track = self.time_track
                                   )
             """
-            v_azim_in_rad = self.nmea_provider.heading * pi / 180
-            abs_v_in_m_per_s = self.nmea_provider.velocity
+            v_azim_in_rad = self.position_provider.heading * pi / 180
+            abs_v_in_m_per_s = self.position_provider.velocity
             
             dest_azim_in_rad = calc_azim(
-                                  lat1_deg = self.nmea_provider.latitude, 
-                                  lon1_deg = self.nmea_provider.longitude, 
+                                  lat1_deg = self.position_provider.latitude, 
+                                  lon1_deg = self.position_provider.longitude, 
                                   lat2_deg = self.dest_lat,
                                   lon2_deg = self.dest_lon,
                                   )
             dest_distance = haversine_distance(
-                                  lat1_deg = self.nmea_provider.latitude, 
-                                  lon1_deg = self.nmea_provider.longitude, 
+                                  lat1_deg = self.position_provider.latitude, 
+                                  lon1_deg = self.position_provider.longitude, 
                                   lat2_deg = self.dest_lat,
                                   lon2_deg = self.dest_lon,
                                   )
