@@ -41,7 +41,7 @@ class PositionSerialNMEA(PositionProvider):
     """
     Connect to a NMEA device on a serial port.
     """
-    def connect(self, serial_port, timeout = 1.0):
+    def connect(self, serial_port="/dev/ttyUSB1", timeout = 1.0):
         if self.is_connected:
             self.disconnect()
         self.serial_connection = serial.Serial( port=serial_port, timeout = timeout )
