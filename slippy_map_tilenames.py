@@ -22,18 +22,26 @@ def num2deg(xtile, ytile, zoom):
 # This returns the NW-corner of the square. Use the function with xtile+1 and/or ytile+1 to get the other corners. With xtile+0.5 & ytile+0.5 it will return the center of the tile. 
   
 zoom = 18
-lat = 50.90838
-lon = 11.56821
+lat = 50.97872
+lon = 11.3319
 
 x,y = deg2num(lat_deg=lat, lon_deg=lon, zoom=zoom)
+
+print("desired_lat        ", lat)
+print("tile north edge lat", num2deg(x,y,zoom)[0])
+print("tile south edge lat", num2deg(x,y+1,zoom)[0])
+
+print("desired_lon        ", lon)
+print("tile west  edge lon", num2deg(x,y,zoom)[1])
+print("tile east  edge lon", num2deg(x+1,y,zoom)[1])
 
 osm_url = "https://tile.openstreetmap.org/" + str(zoom) + "/" + str(x) + "/" + str(y) + ".png"
 
 osm_scout_url  = "http://localhost:8553/v1/tile?"
 # style={style}
 osm_scout_url += "daylight=1"
-osm_scout_url += "&shift=0"
-osm_scout_url += "&scale=1"
+osm_scout_url += "&shift=1"
+osm_scout_url += "&scale=2"
 osm_scout_url += "&z=" + str(zoom)
 osm_scout_url += "&x=" + str(x)
 osm_scout_url += "&y=" + str(y)

@@ -3,9 +3,13 @@
 """
 
 """
+
+import gi
+gi.require_version('Geoclue', '2.0')
+from gi.repository import Geoclue
+
 import serial
 import datetime
-from gi.repository import Geoclue
 
 class PositionProvider(object):
     def __init__(self, **params ):
