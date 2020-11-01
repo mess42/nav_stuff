@@ -66,9 +66,9 @@ class CompassGUI:
                 
         if self.position_provider.update_position():
             self.status_text.set("GPS fix active.")
-            self.lat_track  += self.position_provider.latitude
-            self.lon_track  += self.position_provider.longitude
-            self.time_track += self.position_provider.time
+            self.lat_track  += [self.position_provider.latitude]
+            self.lon_track  += [self.position_provider.longitude]
+            self.time_track += [self.position_provider.time]
             
             # Calculate new angles
             """
@@ -215,8 +215,12 @@ class CompassGUI:
     
     def make_left_text(self):
         s = "GPS data:\n"
-        for key in self.latest_gps_data:
-            s += key + " : " + str(self.latest_gps_data[key]) + "\n"
+        s += "time:"      + str(self.position_provider.time) + "\n"
+        s += "latitude:"  + str(self.position_provider.latitude) + "\n"
+        s += "longitude:" + str(self.position_provider.longitude) + "\n"
+        s += "velocity"   + str(self.position_provider.velocity) + "\n"
+        s += "heading:"   + str(self.position_provider.heading) + "\n"
+
         self.compass_canvas.create_text(5, 0, text= s , font=("Arial", 10), anchor=tk.NW, fill="red")
 
 
