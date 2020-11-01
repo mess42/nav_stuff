@@ -3,6 +3,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, GdkPixbuf
 
 import numpy as np
+import requests
 
 import position
 import tile
@@ -37,7 +38,11 @@ class ButtonWindow(Gtk.Window):
         self.canvas = Gtk.Overlay().new()
 
         tile_image = Gtk.Image()
-        tile_image.set_from_file(self.tile.url)
+        ImgRequest = requests.get(self.tile.url)
+        img = open("test.png","wb")
+        img.write(ImgRequest.content)
+        img.close()
+        tile_image.set_from_file("test.png")
         self.canvas.add(tile_image)
                 
         darea = Gtk.DrawingArea()
