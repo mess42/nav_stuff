@@ -9,7 +9,7 @@ from numpy import pi
 
 class SlippyMapTile(object):
     def __init__(self, lat_deg, lon_deg):
-        zoom = 18
+        zoom = 16
         x,y = self.deg2num(lat_deg=lat_deg, lon_deg=lon_deg, zoom=zoom)
         self.url = self.__make_url__( x = x, y = y, zoom = zoom )
         self.north_lat, self.west_lon = self.num2deg(x  ,y  ,zoom)
