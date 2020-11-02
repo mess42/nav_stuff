@@ -77,10 +77,11 @@ class ButtonWindow(Gtk.Window):
     #    repeat = True
     #    return repeat
     
-    def on_destroy(self):
+    def on_destroy(self, arg2):
+        print("2nd arg is", arg2, type(arg2))
         self.position_provider.disconnect()
         print("Position provider disconnected.")
-        Gtk.main_quit()
+        Gtk.main_quit(arg2)
         print("Let's see whether this is displayed.")
         
     
