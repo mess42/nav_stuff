@@ -1,52 +1,31 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, GdkPixbuf
 
-from PIL import PngImagePlugin
 import numpy as np
-import requests
 
-import position
-import tile
+import position_providers
+import tile_providers
+import download_helpers
 
-"""
-def image2pixbuf(self,im):
-    arr = array.array('B', im.tostring())
-    width, height = im.size
-    return GdkPixbuf.Pixbuf.new_from_data(arr, GdkPixbuf.Colorspace.RGB, True, 8, width, height, width * 4)
-"""
 
-class FakeFileHandle(object):
-    def __init__(self, bytestring):
-        self.bytestring = bytestring
-        self.readpointer = 0
-    
-    def read(self, length = -1):
-        out = b""
-        if length == -1:
-            out = self.bytestring[self.readpointer:]
-            self.readpointer = len(self.bytestring)
-        else:
-            out = self.bytestring[self.readpointer:(self.readpointer+length)]
-            self.readpointer += length
-        return out
-    
-    def tell(self):
-        return self.readpointer
-    
-    def seek(self, new_pos):
-        self.readpointer = new_pos
-
-def array_to_pixbuf(z):
-    " convert from numpy array to GdkPixbuf "
-    z=z.astype('uint8')
-    h,w,c=z.shape
+def array_to_pixbuf(arr):
+    """ 
+    convert from numpy array to GdkPixbuf 
+    """
+    z     = arr.astype('uint8')
+    h,w,c = z.shape
     assert c == 3 or c == 4
+    pix = None
     if hasattr(GdkPixbuf.Pixbuf,'new_from_bytes'):
         Z = GLib.Bytes.new(z.tobytes())
-        return GdkPixbuf.Pixbuf.new_from_bytes(Z, GdkPixbuf.Colorspace.RGB, c==4, 8, w, h, w*c)
-    return GdkPixbuf.Pixbuf.new_from_data(z.tobytes(),  GdkPixbuf.Colorspace.RGB, c==4, 8, w, h, w*c, None, None)
-
+        pix = GdkPixbuf.Pixbuf.new_from_bytes(Z, GdkPixbuf.Colorspace.RGB, c==4, 8, w, h, w*c)
+    else:
+        pix = GdkPixbuf.Pixbuf.new_from_data(z.tobytes(),  GdkPixbuf.Colorspace.RGB, c==4, 8, w, h, w*c, None, None)
+    return pix
 
 class ButtonWindow(Gtk.Window):
     def __init__(self):
@@ -59,7 +38,7 @@ class ButtonWindow(Gtk.Window):
         self.set_border_width(10)
         
         # Position provider
-        self.position_provider = position.PositionSimulation()
+        self.position_provider = position_providers.PositionSimulation()
         
         # Tile provider
         valid_pos =  False
@@ -67,7 +46,7 @@ class ButtonWindow(Gtk.Window):
             valid_pos = self.position_provider.update_position()
             print("waiting for GPS fix ...")
 
-        self.tile = tile.OSMScoutTile(lat_deg = self.position_provider.latitude, 
+        self.tile = tile_providers.OSMScoutTile(lat_deg = self.position_provider.latitude, 
                                       lon_deg = self.position_provider.longitude
                                       )
 
@@ -76,10 +55,7 @@ class ButtonWindow(Gtk.Window):
 
         tile_image = Gtk.Image()
 
-        ImgRequest = requests.get(self.tile.url)
-        fp  = FakeFileHandle( bytestring = ImgRequest.content )
-        im  = PngImagePlugin.PngImageFile(fp).convert("RGB")
-        arr = np.array(im, dtype=int)
+        arr = download_helpers.remote_png_to_numpy(url = self.tile.url)
         pix = array_to_pixbuf(arr)
     
         tile_image.set_from_pixbuf(pix)
@@ -114,8 +90,10 @@ class ButtonWindow(Gtk.Window):
         ctx.arc(marker_x , marker_y, marker_radius_px, 0, 2*np.pi)
         ctx.fill()
         
-
-win = ButtonWindow()
-#win.connect("destroy", Gtk.main_quit)
-win.show_all()
-Gtk.main()
+        
+        
+        
+if __name__ == "__main__":
+    win = ButtonWindow()
+    win.show_all()
+    Gtk.main()

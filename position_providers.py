@@ -21,12 +21,15 @@ class PositionProvider(object):
         self.time      = 0            # unix timestamp of last sensor update
         self.velocity  = 0            # in m/s
         self.heading   = 0            # heading of velocity in degree
-        
         self.is_connected = False
+        
         self.connect( **params )
         self.update_position()
             
     def connect(self, **params):
+        """
+        Connect to a positioning service, configure, allocate and lock resources.
+        """
         raise NotImplementedError()
         
     def disconnect(self):
@@ -38,10 +41,10 @@ class PositionProvider(object):
         return success
 
 class PositionSerialNMEA(PositionProvider):
-    """
-    Connect to a NMEA device on a serial port.
-    """
     def connect(self, serial_port="/dev/ttyUSB1", timeout = 1.0):
+        """
+        Connect to a NMEA device on a serial port.
+        """
         if self.is_connected:
             self.disconnect()
         self.serial_connection = serial.Serial( port=serial_port, timeout = timeout )
@@ -49,6 +52,9 @@ class PositionSerialNMEA(PositionProvider):
         self.is_connected = True
     
     def disconnect(self):
+        """
+        Close the serial connection (free the serial port).
+        """
         if self.is_connected:
             self.serial_connection.close()
             self.is_connected = False

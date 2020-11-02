@@ -7,7 +7,7 @@ from numpy import pi
 import tkinter as tk
 
 from calculate_with_angles import calc_azim, haversine_distance
-import position
+import position_providers
 
 class CompassGUI:
     def __init__(self, master, serial_port, dest_lat = 50.90837, dest_lon = 11.56796):
@@ -31,7 +31,7 @@ class CompassGUI:
         self.lon_track = []
         self.time_track = []
         
-        self.position_provider = position.PositionSerialNMEA(serial_port = serial_port)
+        self.position_provider = position_providers.PositionSerialNMEA(serial_port = serial_port)
         
         # create GUI widgets
         self.create_widgets()
