@@ -32,7 +32,7 @@ class ButtonWindow(Gtk.Window):
         
         # Global window initialisation
         Gtk.Window.__init__(self)
-        self.connect("destroy", Gtk.main_quit)
+        self.connect("destroy", self.on_destroy)
         self.set_title("Map Demo")
         #self.set_default_size(390, 240)
         self.set_border_width(10)
@@ -76,6 +76,13 @@ class ButtonWindow(Gtk.Window):
     #    print("bla")
     #    repeat = True
     #    return repeat
+    
+    def on_destroy(self):
+        self.position_provider.disconnect()
+        print("Position provider disconnected.")
+        Gtk.main_quit()
+        print("Let's see whether this is displayed.")
+        
     
     def on_draw(self, da, ctx):
 
