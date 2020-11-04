@@ -83,22 +83,15 @@ class SlippyMap(object):
         """
         zoom = 17
         
-        # Can the large tile be used ?
-        i_top, i_bottom, i_left, i_right = self.large_tile.get_cropping_recipe( 
+        # Can the large tile be cropped ?
+        cropping_indices_would_be_sane = self.large_tile.check_sanity_of_cropping_angles(
                                                  center_lat_deg   = center_lat_deg, 
                                                  center_lon_deg   = center_lon_deg, 
                                                  cropped_xsize_px = xsize_px,
                                                  cropped_ysize_px = ysize_px,
                                                  )
 
-        large_tile_can_be_used = (    zoom     == self.large_tile.zoom
-                                  and i_top    >= 0 
-                                  and i_bottom <  self.large_tile.ysize_px
-                                  and i_top    <  i_bottom
-                                  and i_left   >= 0 
-                                  and i_right  <  self.large_tile.xsize_px
-                                  and i_left   <  i_right
-                                  )
+        large_tile_can_be_used = ( zoom == self.large_tile.zoom and cropping_indices_would_be_sane )
         
         if not large_tile_can_be_used:
             # make a new large tile
@@ -108,13 +101,14 @@ class SlippyMap(object):
                                                    xsize_px = 2 * xsize_px, 
                                                    ysize_px = 2 * ysize_px 
                                                   )
-            # update the cropping recipe
-            i_top, i_bottom, i_left, i_right = self.large_tile.get_cropping_recipe( 
-                                                 center_lat_deg   = center_lat_deg, 
-                                                 center_lon_deg   = center_lon_deg, 
-                                                 cropped_xsize_px = xsize_px,
-                                                 cropped_ysize_px = ysize_px
-                                                 )
+
+        # get the cropping indices
+        i_top, i_bottom, i_left, i_right = self.large_tile.get_cropping_indices( 
+                                             center_lat_deg   = center_lat_deg, 
+                                             center_lon_deg   = center_lon_deg, 
+                                             cropped_xsize_px = xsize_px,
+                                             cropped_ysize_px = ysize_px
+                                             )
     
         cropped_im = self.large_tile.raster_image[i_top:i_bottom,i_left:i_right]
         

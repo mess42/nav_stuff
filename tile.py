@@ -50,7 +50,29 @@ class RasterTile(object):
         iy = int(np.round(self.ysize_px * (lat_deg - self.north_lat) / (self.south_lat - self.north_lat)))
         return iy, ix
 
-    def get_cropping_recipe(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px):
+    def pxpos_to_angles(self, iy, ix):
+        """
+        @brief: get angles for given get pixel coordinates.
+        
+        self.west_lon is the coordinate of the pixel ix=0.
+        self.east_lon is the coordinate of the next tile pixel ix=0
+        or this tile ix = self.ysize_px (index out of bounds). 
+        It cannot be reached with an index inside this tile.
+        
+        In close analogy, iy=0 represents self.north_lat of this tile,
+        and self.south_lat is outside of this tile.
+        
+        @param iy (int)
+        @param ix (int)
+
+        @return lat_deg (float)
+        @return lon_deg (float)
+        """
+        lat_deg = self.north_lat + iy / self.ysize_px * (self.south_lat - self.north_lat) 
+        lon_deg = self.west_lon  + ix / self.xsize_px * (self.east_lon  - self.west_lon )
+        return lat_deg, lon_deg
+
+    def get_cropping_indices(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px):
         """
         @brief: get pixel coordinates to cut a tile.
         
@@ -75,3 +97,30 @@ class RasterTile(object):
         i_bottom = i_top     + cropped_ysize_px
         
         return i_top, i_bottom, i_left, i_right
+
+    def check_sanity_of_cropping_indices(self, i_top, i_bottom, i_left, i_right):
+        """
+        @brief: Is it possible to crop without "out of bounds" errors ?
+        
+        @param i_top    (int)
+        @param i_bottom (int)
+        @param i_left   (int)
+        @param i_right  (int)
+        
+        @return is_sane (bool)
+        """
+        is_sane = (     i_top    >= 0 
+                    and i_bottom <  self.ysize_px
+                    and i_top    <  i_bottom
+                    and i_left   >= 0 
+                    and i_right  <  self.xsize_px
+                    and i_left   <  i_right
+                   )
+        return is_sane
+    
+    def check_sanity_of_cropping_angles(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px):
+        i_top, i_bottom, i_left, i_right = self.get_cropping_indices( center_lat_deg   = center_lat_deg, center_lon_deg   = center_lon_deg, cropped_xsize_px = cropped_xsize_px, cropped_ysize_px = cropped_ysize_px )
+        is_sane                          = self.check_sanity_of_cropping_indices( i_top, i_bottom, i_left, i_right)
+        return is_sane
+ 
+        
