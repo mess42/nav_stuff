@@ -9,22 +9,13 @@ import numpy as np
 from numpy import pi
 
 import download_helpers
+import tile
 
 class SlippyMap(object):
     def __init__(self):
-        self.cached_server_tiles = {}
+        self.cached_slippy_tiles = {}
+        self.large_tile = tile.RasterTile(zoom=0)
         
-        self.large_tile = {
-                "image":     np.array([[[0,0,0]]]),
-                "north_lat": 1E-9, 
-                "east_lon":  0,
-                "south_lat": 0, 
-                "west_lon":  1E-9,
-                "xsize_px":  1, 
-                "ysize_px":  1
-               }
-        
-
     def make_url(self, x, y, zoom):
         raise NotImplementedError()
         
@@ -43,7 +34,7 @@ class SlippyMap(object):
         lat_deg = lat_rad * 180 / pi
         return (lat_deg, lon_deg)
     
-    def __download_new_tile_from_server__(self, x, y, zoom):
+    def __download_slippy_tile_from_server__(self, x, y, zoom):
         """
         @brief: download a slippy map tile from the tile server and return it.
         
@@ -66,18 +57,10 @@ class SlippyMap(object):
         arr = download_helpers.remote_png_to_numpy(url = url)
         ysize, xsize, c = np.shape(arr)
         
-        tile = {"x":         x,
-                "y":         y,
-                "z":         zoom,
-                "image":     arr,
-                "north_lat": north_lat, 
-                "east_lon":  east_lon,
-                "south_lat": south_lat, 
-                "west_lon":  west_lon,
-                "xsize_px":  xsize, 
-                "ysize_px":  ysize
-               }
-        return tile
+        slippy_tile = tile.RasterTile( raster_image   = arr ,
+                                       angular_extent = {"north_lat": north_lat, "east_lon":  east_lon, "south_lat": south_lat, "west_lon":  west_lon }
+                                     )
+        return slippy_tile
     
     def get_slippy_tile(self,x,y,zoom):
         """
@@ -105,19 +88,20 @@ class SlippyMap(object):
                                                  center_lon_deg = center_lon_deg, 
                                                  cropped_xsize_px = xsize_px,
                                                  cropped_ysize_px = ysize_px,
-                                                 tile_xsize_px  = self.large_tile["xsize_px"], 
-                                                 tile_ysize_px  = self.large_tile["ysize_px"], 
-                                                 tile_north_lat = self.large_tile["north_lat"],
-                                                 tile_south_lat = self.large_tile["south_lat"],
-                                                 tile_east_lon  = self.large_tile["east_lon"], 
-                                                 tile_west_lon  = self.large_tile["west_lon"],  
+                                                 tile_xsize_px  = self.large_tile.xsize_px, 
+                                                 tile_ysize_px  = self.large_tile.ysize_px, 
+                                                 tile_north_lat = self.large_tile.north_lat,
+                                                 tile_south_lat = self.large_tile.south_lat,
+                                                 tile_east_lon  = self.large_tile.east_lon, 
+                                                 tile_west_lon  = self.large_tile.west_lon,  
                                                  )
 
-        large_tile_can_be_used = (    i_top    >= 0 
-                                  and i_bottom <  self.large_tile["ysize_px"]
+        large_tile_can_be_used = (    zoom     == self.large_tile.zoom
+                                  and i_top    >= 0 
+                                  and i_bottom <  self.large_tile.ysize_px
                                   and i_top    <  i_bottom
                                   and i_left   >= 0 
-                                  and i_right  <  self.large_tile["xsize_px"]
+                                  and i_right  <  self.large_tile.xsize_px
                                   and i_left   <  i_right
                                   )
         
@@ -134,26 +118,16 @@ class SlippyMap(object):
                                                  center_lon_deg = center_lon_deg, 
                                                  cropped_xsize_px = xsize_px,
                                                  cropped_ysize_px = ysize_px,
-                                                 tile_xsize_px  = self.large_tile["xsize_px"], 
-                                                 tile_ysize_px  = self.large_tile["ysize_px"], 
-                                                 tile_north_lat = self.large_tile["north_lat"],
-                                                 tile_south_lat = self.large_tile["south_lat"],
-                                                 tile_east_lon  = self.large_tile["east_lon"], 
-                                                 tile_west_lon  = self.large_tile["west_lon"],  
+                                                 tile_xsize_px  = self.large_tile.xsize_px, 
+                                                 tile_ysize_px  = self.large_tile.ysize_px, 
+                                                 tile_north_lat = self.large_tile.north_lat,
+                                                 tile_south_lat = self.large_tile.south_lat,
+                                                 tile_east_lon  = self.large_tile.east_lon, 
+                                                 tile_west_lon  = self.large_tile.west_lon,  
                                                  )
     
-        cropped_im = self.large_tile["image"][i_top:i_bottom,i_left:i_right]
+        cropped_im = self.large_tile.raster_image[i_top:i_bottom,i_left:i_right]
         
-        """
-        tile = {"image":     cropped_im,
-                "north_lat": north_lat, 
-                "east_lon":  east_lon,
-                "south_lat": south_lat, 
-                "west_lon":  west_lon,
-                "xsize_px":  xsize_px, 
-                "ysize_px":  ysize_px
-               }
-        """
         return cropped_im
 
     def angles_to_pxpos(self, lat_deg, lon_deg, tile_xsize_px, tile_ysize_px, tile_north_lat, tile_south_lat, tile_east_lon, tile_west_lon):
@@ -189,8 +163,8 @@ class SlippyMap(object):
         
         # If not cached, get the center tile
         center_tile = self.get_slippy_tile(x = x_center, y = y_center, zoom = zoom)
-        xsize_singletile = center_tile["xsize_px"]
-        ysize_singletile = center_tile["ysize_px"]
+        xsize_singletile = center_tile.xsize_px
+        ysize_singletile = center_tile.ysize_px
 
         # Calculate how the large tile should look like:
         dx = int(np.ceil(.5 * ( xsize_px / xsize_singletile - 1 ) )) # tile index for stitching goes from -dx to dx
@@ -212,19 +186,13 @@ class SlippyMap(object):
                 y0 = (iy+dy)   * ysize_singletile
                 y1 = (iy+dy+1) * ysize_singletile
                 
-                image_large[y0:y1,x0:x1] = current_tile["image"]
+                image_large[y0:y1,x0:x1] = current_tile.raster_image
 
-        # Put all data in a tile dict
-        large_tile = {
-                "image":     image_large,
-                "north_lat": north_lat, 
-                "east_lon":  east_lon,
-                "south_lat": south_lat, 
-                "west_lon":  west_lon,
-                "xsize_px":  xsize_large, 
-                "ysize_px":  ysize_large
-               }
-        
+        # Put all data in a tile
+        large_tile = tile.RasterTile( raster_image   = image_large,
+                                      zoom           = zoom,
+                                      angular_extent = {"north_lat": north_lat, "east_lon":  east_lon, "south_lat": south_lat, "west_lon":  west_lon }
+                                    )
         return large_tile
     
         
@@ -276,15 +244,8 @@ class DebugMap(SlippyMap):
         arr[:,:,1] = rgb[1]
         arr[:,:,2] = rgb[2]
         
-        tile = {"x":         x,
-                "y":         y,
-                "z":         zoom,
-                "image":     arr,
-                "north_lat": north_lat, 
-                "east_lon":  east_lon,
-                "south_lat": south_lat, 
-                "west_lon":  west_lon,
-                "xsize_px":  xsize, 
-                "ysize_px":  ysize
-               }
-        return tile
+        slippy_tile = tile.RasterTile( raster_image   = arr,
+                                       zoom           = zoom,
+                                       angular_extent = {"north_lat": north_lat, "east_lon":  east_lon, "south_lat": south_lat, "west_lon":  west_lon }
+                              )
+        return slippy_tile
