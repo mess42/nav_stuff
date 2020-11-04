@@ -84,16 +84,11 @@ class SlippyMap(object):
         zoom = 17
         
         # Can the large tile be used ?
-        i_top, i_bottom, i_left, i_right = self.get_cropping_recipe( center_lat_deg = center_lat_deg, 
-                                                 center_lon_deg = center_lon_deg, 
+        i_top, i_bottom, i_left, i_right = self.large_tile.get_cropping_recipe( 
+                                                 center_lat_deg   = center_lat_deg, 
+                                                 center_lon_deg   = center_lon_deg, 
                                                  cropped_xsize_px = xsize_px,
                                                  cropped_ysize_px = ysize_px,
-                                                 tile_xsize_px  = self.large_tile.xsize_px, 
-                                                 tile_ysize_px  = self.large_tile.ysize_px, 
-                                                 tile_north_lat = self.large_tile.north_lat,
-                                                 tile_south_lat = self.large_tile.south_lat,
-                                                 tile_east_lon  = self.large_tile.east_lon, 
-                                                 tile_west_lon  = self.large_tile.west_lon,  
                                                  )
 
         large_tile_can_be_used = (    zoom     == self.large_tile.zoom
@@ -114,48 +109,21 @@ class SlippyMap(object):
                                                    ysize_px = 2 * ysize_px 
                                                   )
             # update the cropping recipe
-            i_top, i_bottom, i_left, i_right = self.get_cropping_recipe( center_lat_deg = center_lat_deg, 
-                                                 center_lon_deg = center_lon_deg, 
+            i_top, i_bottom, i_left, i_right = self.large_tile.get_cropping_recipe( 
+                                                 center_lat_deg   = center_lat_deg, 
+                                                 center_lon_deg   = center_lon_deg, 
                                                  cropped_xsize_px = xsize_px,
-                                                 cropped_ysize_px = ysize_px,
-                                                 tile_xsize_px  = self.large_tile.xsize_px, 
-                                                 tile_ysize_px  = self.large_tile.ysize_px, 
-                                                 tile_north_lat = self.large_tile.north_lat,
-                                                 tile_south_lat = self.large_tile.south_lat,
-                                                 tile_east_lon  = self.large_tile.east_lon, 
-                                                 tile_west_lon  = self.large_tile.west_lon,  
+                                                 cropped_ysize_px = ysize_px
                                                  )
     
         cropped_im = self.large_tile.raster_image[i_top:i_bottom,i_left:i_right]
         
         return cropped_im
 
-    def angles_to_pxpos(self, lat_deg, lon_deg, tile_xsize_px, tile_ysize_px, tile_north_lat, tile_south_lat, tile_east_lon, tile_west_lon):
-        ix = int(np.round(tile_xsize_px * (lon_deg - tile_west_lon) / (tile_east_lon - tile_west_lon)))
-        iy = int(np.round(tile_ysize_px * (lat_deg - tile_north_lat) / (tile_south_lat - tile_north_lat)))
-        return iy,ix
-
-    def get_cropping_recipe(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px, tile_xsize_px, tile_ysize_px, tile_north_lat, tile_south_lat, tile_east_lon, tile_west_lon):
-        iy_center, ix_center = self.angles_to_pxpos( lat_deg = center_lat_deg, 
-                                                     lon_deg = center_lon_deg, 
-                                                     tile_xsize_px  = tile_xsize_px, 
-                                                     tile_ysize_px  = tile_ysize_px, 
-                                                     tile_north_lat = tile_north_lat,
-                                                     tile_south_lat = tile_south_lat,
-                                                     tile_east_lon  = tile_east_lon, 
-                                                     tile_west_lon  = tile_west_lon,  
-                                                     )    
-        i_left   = ix_center - cropped_xsize_px // 2
-        i_right  = i_left + cropped_xsize_px
-        i_top    = iy_center - cropped_ysize_px // 2
-        i_bottom = i_top + cropped_ysize_px
-        return i_top, i_bottom, i_left, i_right
-        
-        
     
     def get_large_tile(self, lat_deg, lon_deg, zoom, xsize_px , ysize_px ):
         """
-        @brief: Build a large tile from which requested raster images can be cut.
+        @brief: Build a large tile from which smaller raster images can be cut.
         """
         
         # Number of the center slippy map tile
