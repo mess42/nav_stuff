@@ -1,0 +1,290 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Python
+"""
+import hashlib
+
+import numpy as np
+from numpy import pi
+
+import download_helpers
+
+class SlippyMap(object):
+    def __init__(self):
+        self.cached_server_tiles = {}
+        
+        self.large_tile = {
+                "image":     np.array([[[0,0,0]]]),
+                "north_lat": 1E-9, 
+                "east_lon":  0,
+                "south_lat": 0, 
+                "west_lon":  1E-9,
+                "xsize_px":  1, 
+                "ysize_px":  1
+               }
+        
+
+    def make_url(self, x, y, zoom):
+        raise NotImplementedError()
+        
+    def deg2num(self, lat_deg, lon_deg, zoom):
+        lat_rad = lat_deg * pi / 180.
+        n = 2.0 ** zoom
+        xtile = int((lon_deg + 180.0) / 360.0 * n)
+        ytile = int((1.0 - np.arcsinh(np.tan(lat_rad)) / np.pi) / 2.0 * n)
+        return (xtile, ytile)
+    
+    def num2deg(self, xtile, ytile, zoom):
+    # This returns the NW-corner of the square. Use the function with xtile+1 and/or ytile+1 to get the other corners. With xtile+0.5 & ytile+0.5 it will return the center of the tile. 
+        n = 2.0 ** zoom
+        lon_deg = xtile / n * 360.0 - 180.0
+        lat_rad = np.arctan(np.sinh(np.pi * (1 - 2 * ytile / n)))
+        lat_deg = lat_rad * 180 / pi
+        return (lat_deg, lon_deg)
+    
+    def __download_new_tile_from_server__(self, x, y, zoom):
+        """
+        @brief: download a slippy map tile from the tile server and return it.
+        
+                This method uses bandwidth, so first check if there is a
+                locally cached vesion of this tile before calling
+                this method!
+                
+                This method does not store the resulting tile in the
+                object's cache. Be sure to do so externally.
+        
+        @param x (int) slippy map tile number
+        @param y (int)
+        @param zoom (int)
+        
+        @return tile (dict)
+        """
+        url = self.make_url( x = x, y = y, zoom = zoom )
+        north_lat, west_lon = self.num2deg(x  ,y  ,zoom)
+        south_lat, east_lon = self.num2deg(x+1,y+1,zoom)
+        arr = download_helpers.remote_png_to_numpy(url = url)
+        ysize, xsize, c = np.shape(arr)
+        
+        tile = {"x":         x,
+                "y":         y,
+                "z":         zoom,
+                "image":     arr,
+                "north_lat": north_lat, 
+                "east_lon":  east_lon,
+                "south_lat": south_lat, 
+                "west_lon":  west_lon,
+                "xsize_px":  xsize, 
+                "ysize_px":  ysize
+               }
+        return tile
+    
+    def get_slippy_tile(self,x,y,zoom):
+        """
+        @brief: get a slippy map tile.
+        """
+        if (zoom, x, y) not in self.cached_server_tiles:
+            self.cached_server_tiles[(zoom, x, y)] = self.__download_new_tile_from_server__( x = x, y = y, zoom = zoom )
+            #TODO: check if RAM is too full of cached tiles and remove some is necessary
+        return self.cached_server_tiles[(zoom, x, y)]
+
+    
+    def get_cropped_tile(self, center_lat_deg, center_lon_deg, xsize_px, ysize_px ):
+        """
+        @param center_lat_deg  (float)
+        @param center_lon_deg  (float)
+        @param xsize_px (int)
+        @param ysize_px (int)
+        
+        @return im (3d numpy array of int)
+        """
+        zoom = 17
+        
+        # Can the large tile be used ?
+        i_top, i_bottom, i_left, i_right = self.get_cropping_recipe( center_lat_deg = center_lat_deg, 
+                                                 center_lon_deg = center_lon_deg, 
+                                                 cropped_xsize_px = xsize_px,
+                                                 cropped_ysize_px = ysize_px,
+                                                 tile_xsize_px  = self.large_tile["xsize_px"], 
+                                                 tile_ysize_px  = self.large_tile["ysize_px"], 
+                                                 tile_north_lat = self.large_tile["north_lat"],
+                                                 tile_south_lat = self.large_tile["south_lat"],
+                                                 tile_east_lon  = self.large_tile["east_lon"], 
+                                                 tile_west_lon  = self.large_tile["west_lon"],  
+                                                 )
+
+        large_tile_can_be_used = (    i_top    >= 0 
+                                  and i_bottom <  self.large_tile["ysize_px"]
+                                  and i_top    <  i_bottom
+                                  and i_left   >= 0 
+                                  and i_right  <  self.large_tile["xsize_px"]
+                                  and i_left   <  i_right
+                                  )
+        
+        if not large_tile_can_be_used:
+            # make a new large tile
+            self.large_tile = self.get_large_tile( lat_deg  = center_lat_deg, 
+                                                   lon_deg  = center_lon_deg, 
+                                                   zoom     = zoom, 
+                                                   xsize_px = 2 * xsize_px, 
+                                                   ysize_px = 2 * ysize_px 
+                                                  )
+            # update the cropping recipe
+            i_top, i_bottom, i_left, i_right = self.get_cropping_recipe( center_lat_deg = center_lat_deg, 
+                                                 center_lon_deg = center_lon_deg, 
+                                                 cropped_xsize_px = xsize_px,
+                                                 cropped_ysize_px = ysize_px,
+                                                 tile_xsize_px  = self.large_tile["xsize_px"], 
+                                                 tile_ysize_px  = self.large_tile["ysize_px"], 
+                                                 tile_north_lat = self.large_tile["north_lat"],
+                                                 tile_south_lat = self.large_tile["south_lat"],
+                                                 tile_east_lon  = self.large_tile["east_lon"], 
+                                                 tile_west_lon  = self.large_tile["west_lon"],  
+                                                 )
+    
+        cropped_im = self.large_tile["image"][i_top:i_bottom,i_left:i_right]
+        
+        """
+        tile = {"image":     cropped_im,
+                "north_lat": north_lat, 
+                "east_lon":  east_lon,
+                "south_lat": south_lat, 
+                "west_lon":  west_lon,
+                "xsize_px":  xsize_px, 
+                "ysize_px":  ysize_px
+               }
+        """
+        return cropped_im
+
+    def angles_to_pxpos(self, lat_deg, lon_deg, tile_xsize_px, tile_ysize_px, tile_north_lat, tile_south_lat, tile_east_lon, tile_west_lon):
+        ix = int(np.round(tile_xsize_px * (lon_deg - tile_west_lon) / (tile_east_lon - tile_west_lon)))
+        iy = int(np.round(tile_ysize_px * (lat_deg - tile_north_lat) / (tile_south_lat - tile_north_lat)))
+        return iy,ix
+
+    def get_cropping_recipe(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px, tile_xsize_px, tile_ysize_px, tile_north_lat, tile_south_lat, tile_east_lon, tile_west_lon):
+        iy_center, ix_center = self.angles_to_pxpos( lat_deg = center_lat_deg, 
+                                                     lon_deg = center_lon_deg, 
+                                                     tile_xsize_px  = tile_xsize_px, 
+                                                     tile_ysize_px  = tile_ysize_px, 
+                                                     tile_north_lat = tile_north_lat,
+                                                     tile_south_lat = tile_south_lat,
+                                                     tile_east_lon  = tile_east_lon, 
+                                                     tile_west_lon  = tile_west_lon,  
+                                                     )    
+        i_left   = ix_center - cropped_xsize_px // 2
+        i_right  = i_left + cropped_xsize_px
+        i_top    = iy_center - cropped_ysize_px // 2
+        i_bottom = i_top + cropped_ysize_px
+        return i_top, i_bottom, i_left, i_right
+        
+        
+    
+    def get_large_tile(self, lat_deg, lon_deg, zoom, xsize_px , ysize_px ):
+        """
+        @brief: Build a large tile from which requested raster images can be cut.
+        """
+        
+        # Number of the center slippy map tile
+        x_center, y_center = self.deg2num(lat_deg = lat_deg, lon_deg = lon_deg, zoom = zoom)
+        
+        # If not cached, get the center tile
+        center_tile = self.get_slippy_tile(x = x_center, y = y_center, zoom = zoom)
+        xsize_singletile = center_tile["xsize_px"]
+        ysize_singletile = center_tile["ysize_px"]
+
+        # Calculate how the large tile should look like:
+        dx = int(np.ceil(.5 * ( xsize_px / xsize_singletile - 1 ) )) # tile index for stitching goes from -dx to dx
+        dy = int(np.ceil(.5 * ( ysize_px / ysize_singletile - 1 ) ))
+        xsize_large = (2*dx+1)*xsize_singletile
+        ysize_large = (2*dy+1)*ysize_singletile
+        north_lat, west_lon = self.num2deg(xtile = x_center-dx, ytile = y_center-dy, zoom=zoom)
+        south_lat, east_lon = self.num2deg(xtile = x_center+dx+1, ytile = y_center+dy+1, zoom=zoom)
+        
+        # Stitch the large tile from small slippy map tiles
+        image_large = np.zeros( (ysize_large, xsize_large,3) ,dtype=int)
+        for ix in np.arange(2*dx+1)-dx:
+            for iy in np.arange(2*dy+1)-dy:
+
+                current_tile = self.get_slippy_tile(x = x_center+ix, y = y_center+iy, zoom=zoom )
+                                
+                x0 = (ix+dx)   * xsize_singletile
+                x1 = (ix+dx+1) * xsize_singletile
+                y0 = (iy+dy)   * ysize_singletile
+                y1 = (iy+dy+1) * ysize_singletile
+                
+                image_large[y0:y1,x0:x1] = current_tile["image"]
+
+        # Put all data in a tile dict
+        large_tile = {
+                "image":     image_large,
+                "north_lat": north_lat, 
+                "east_lon":  east_lon,
+                "south_lat": south_lat, 
+                "west_lon":  west_lon,
+                "xsize_px":  xsize_large, 
+                "ysize_px":  ysize_large
+               }
+        
+        return large_tile
+    
+        
+#TODO: one single class with URL as parameter    
+class OpenStreetMap(SlippyMap):
+    def make_url(self, x, y, zoom):
+        osm_url = "https://tile.openstreetmap.org/" + str(zoom) + "/" + str(x) + "/" + str(y) + ".png"
+        return osm_url
+
+class OpenTopoMap(SlippyMap):
+    def make_url(self, x, y, zoom):
+        osm_url = "https://tile.opentopomap.org/" + str(zoom) + "/" + str(x) + "/" + str(y) + ".png"
+        return osm_url
+
+class OSMScout(SlippyMap):
+    def make_url(self, x, y, zoom):
+        osm_scout_url  = "http://localhost:8553/v1/tile?"
+        osm_scout_url += "daylight=1"
+        osm_scout_url += "&scale=1"
+        osm_scout_url += "&z=" + str(zoom)
+        osm_scout_url += "&x=" + str(x)
+        osm_scout_url += "&y=" + str(y)
+        return osm_scout_url
+
+class DebugMap(SlippyMap):
+           
+    def random_color(self,x,y,z):
+        m = hashlib.md5()
+        m.update(str(x).encode("ascii"))
+        m.update(str(y).encode("ascii"))
+        m.update(str(z).encode("ascii"))
+        d = m.digest()
+        r = d[0]
+        g = d[1]
+        b = d[2]
+        return r,g,b
+    
+    def get_slippy_tile(self,x,y,zoom):
+        """
+        @brief: get a slippy map tile.
+        """
+        north_lat, west_lon = self.num2deg(x  ,y  ,zoom)
+        south_lat, east_lon = self.num2deg(x+1,y+1,zoom)
+        xsize = 256
+        ysize = 256
+        arr   = np.zeros((ysize,xsize,3),dtype=int)
+        rgb   = self.random_color(x,y,zoom)
+        arr[:,:,0] = rgb[0]
+        arr[:,:,1] = rgb[1]
+        arr[:,:,2] = rgb[2]
+        
+        tile = {"x":         x,
+                "y":         y,
+                "z":         zoom,
+                "image":     arr,
+                "north_lat": north_lat, 
+                "east_lon":  east_lon,
+                "south_lat": south_lat, 
+                "west_lon":  west_lon,
+                "xsize_px":  xsize, 
+                "ysize_px":  ysize
+               }
+        return tile
