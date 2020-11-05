@@ -90,6 +90,17 @@ class MapWindow(Gtk.Window):
         marker_lat = self.position_provider.latitude
         marker_lon = self.position_provider.longitude
         marker_radius_px = 10
+
+        window_size = self.get_size()
+        map_width  = window_size[0]
+        map_height = window_size[1]
+        marker_x = map_width // 2
+        marker_y = map_height // 2
+
+        ctx.set_source_rgb(0,0,0)
+        ctx.arc(marker_x , marker_y, marker_radius_px, 0, 2*np.pi)
+        ctx.fill()
+
         
         #marker_y, marker_x = self.map.angles_to_pxpos(self, lat_deg, lon_deg, tile_xsize_px, tile_ysize_px, tile_north_lat, tile_south_lat, tile_east_lon, tile_west_lon)
         #marker_x = int(np.round(self.tile.xsize * (marker_lon - self.tile.west_lon) / (self.tile.east_lon - self.tile.west_lon)))

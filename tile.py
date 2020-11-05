@@ -123,4 +123,20 @@ class RasterTile(object):
         is_sane                          = self.check_sanity_of_cropping_indices( i_top, i_bottom, i_left, i_right)
         return is_sane
  
+    def get_cropped_tile_by_indices(self, i_top, i_bottom, i_left, i_right):
+        if not self.check_sanity_of_cropping_indices(i_top, i_bottom, i_left, i_right):
+            raise Exception("Cropping indices are corrupt.")
+        cropped_im          = self.raster_image[i_top:i_bottom,i_left:i_right]
+        north_lat, west_lon = self.pxpos_to_angles(iy=i_top,    ix=i_left )
+        south_lat, east_lon = self.pxpos_to_angles(iy=i_bottom, ix=i_right)
         
+        cropped_tile = RasterTile(zoom           = self.zoom, 
+                                  raster_image   = cropped_im,
+                                  angular_extent = {"north_lat": north_lat, "south_lat": south_lat, "east_lon":  east_lon, "west_lon":  west_lon },
+                                 )
+        return cropped_tile
+
+    def get_cropped_tile_by_angles(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px):
+        i_top, i_bottom, i_left, i_right = self.get_cropping_indices( center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px)
+        cropped_tile = self.get_cropped_tile_by_indices( i_top=i_top, i_bottom=i_bottom, i_left=i_left, i_right=i_right)
+        return cropped_tile

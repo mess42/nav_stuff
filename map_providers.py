@@ -58,7 +58,8 @@ class SlippyMap(object):
         ysize, xsize, c = np.shape(arr)
         
         slippy_tile = tile.RasterTile( raster_image   = arr ,
-                                       angular_extent = {"north_lat": north_lat, "east_lon":  east_lon, "south_lat": south_lat, "west_lon":  west_lon }
+                                       angular_extent = {"north_lat": north_lat, "east_lon":  east_lon, "south_lat": south_lat, "west_lon":  west_lon },
+                                       zoom           = zoom
                                      )
         return slippy_tile
     
@@ -66,10 +67,10 @@ class SlippyMap(object):
         """
         @brief: get a slippy map tile.
         """
-        if (zoom, x, y) not in self.cached_server_tiles:
-            self.cached_server_tiles[(zoom, x, y)] = self.__download_new_tile_from_server__( x = x, y = y, zoom = zoom )
+        if (zoom, x, y) not in self.cached_slippy_tiles:
+            self.cached_slippy_tiles[(zoom, x, y)] = self.__download_slippy_tile_from_server__( x = x, y = y, zoom = zoom )
             #TODO: check if RAM is too full of cached tiles and remove some is necessary
-        return self.cached_server_tiles[(zoom, x, y)]
+        return self.cached_slippy_tiles[(zoom, x, y)]
 
     
     def get_cropped_tile(self, center_lat_deg, center_lon_deg, xsize_px, ysize_px ):
@@ -92,9 +93,9 @@ class SlippyMap(object):
                                                  )
 
         large_tile_can_be_used = ( zoom == self.large_tile.zoom and cropping_indices_would_be_sane )
-        
+
+        # if large tile is unsuitable, make a new one
         if not large_tile_can_be_used:
-            # make a new large tile
             self.large_tile = self.get_large_tile( lat_deg  = center_lat_deg, 
                                                    lon_deg  = center_lon_deg, 
                                                    zoom     = zoom, 
@@ -102,17 +103,14 @@ class SlippyMap(object):
                                                    ysize_px = 2 * ysize_px 
                                                   )
 
-        # get the cropping indices
-        i_top, i_bottom, i_left, i_right = self.large_tile.get_cropping_indices( 
-                                             center_lat_deg   = center_lat_deg, 
+        # now we can be sure that large tile fits the requested region, so let'scrop
+        cropped_tile = self.large_tile.get_cropped_tile_by_angles(center_lat_deg   = center_lat_deg, 
                                              center_lon_deg   = center_lon_deg, 
                                              cropped_xsize_px = xsize_px,
                                              cropped_ysize_px = ysize_px
                                              )
-    
-        cropped_im = self.large_tile.raster_image[i_top:i_bottom,i_left:i_right]
         
-        return cropped_im
+        return cropped_tile.raster_image
 
     
     def get_large_tile(self, lat_deg, lon_deg, zoom, xsize_px , ysize_px ):
