@@ -37,6 +37,8 @@ class MapWindow(Gtk.Window):
         self.set_border_width(0)
         self.maximize()
         
+        update_delay_in_ms = 50
+        
         # Position provider
         self.position_provider = position_providers.PositionSimulation()
         valid_pos =  False
@@ -66,13 +68,13 @@ class MapWindow(Gtk.Window):
         self.add(grid)
         grid.add(self.map_canvas)
         
-        #self.timeout_id = GLib.timeout_add(500, self.on_timeout, None)
+        self.timeout_id = GLib.timeout_add(update_delay_in_ms, self.on_timeout, None)
           
     
-    #def on_timeout(self, data):
-    #    print("bla")
-    #    repeat = True
-    #    return repeat
+    def on_timeout(self, data):
+        self.position_provider.update_position()
+        repeat = True
+        return repeat
     
     def on_destroy(self, object_to_destroy):
         """

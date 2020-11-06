@@ -99,8 +99,8 @@ class SlippyMap(object):
             self.large_tile = self.get_large_tile( lat_deg  = center_lat_deg, 
                                                    lon_deg  = center_lon_deg, 
                                                    zoom     = zoom, 
-                                                   xsize_px = 2 * xsize_px, 
-                                                   ysize_px = 2 * ysize_px 
+                                                   xsize_px = 1.4 * xsize_px, 
+                                                   ysize_px = 1.4 * ysize_px 
                                                   )
 
         # now we can be sure that large tile fits the requested region, so let'scrop

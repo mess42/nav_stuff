@@ -8,6 +8,7 @@ import gi
 gi.require_version('Geoclue', '2.0')
 from gi.repository import Geoclue
 
+import numpy as np
 import serial
 import datetime
 
@@ -162,9 +163,10 @@ class PositionSimulation(PositionProvider):
         self.is_connected = False
         
     def update_position(self):
+        phi = 0.1 * datetime.datetime.now().timestamp()
         self.time      = datetime.datetime.now().timestamp()
-        self.latitude  = 50.97872
-        self.longitude = 11.3319
+        self.latitude  = 50.97872 + 0.001 * np.sin(phi)
+        self.longitude = 11.3319 + 0.001 * np.cos(phi)
         self.velocity  = 0
         self.heading   = 0
         return True
