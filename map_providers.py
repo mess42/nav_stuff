@@ -12,12 +12,16 @@ import download_helpers
 import tile
 
 class SlippyMap(object):
-    def __init__(self):
+    def __init__(self, url_template):
         self.cached_slippy_tiles = {}
         self.large_tile = tile.RasterTile(zoom=0)
+        self.url_template = url_template
         
     def make_url(self, x, y, zoom):
-        raise NotImplementedError()
+        url = self.url_template.replace("{x}", str(x) )
+        url =               url.replace("{y}", str(y) )
+        url =               url.replace("{z}", str(zoom) )
+        return url
         
     def deg2num(self, lat_deg, lon_deg, zoom):
         lat_rad = lat_deg * pi / 180.
@@ -110,7 +114,7 @@ class SlippyMap(object):
                                              cropped_ysize_px = ysize_px
                                              )
         
-        return cropped_tile.raster_image
+        return cropped_tile
 
     
     def get_large_tile(self, lat_deg, lon_deg, zoom, xsize_px , ysize_px ):
@@ -156,27 +160,6 @@ class SlippyMap(object):
         return large_tile
     
         
-#TODO: one single class with URL as parameter    
-class OpenStreetMap(SlippyMap):
-    def make_url(self, x, y, zoom):
-        osm_url = "https://tile.openstreetmap.org/" + str(zoom) + "/" + str(x) + "/" + str(y) + ".png"
-        return osm_url
-
-class OpenTopoMap(SlippyMap):
-    def make_url(self, x, y, zoom):
-        osm_url = "https://tile.opentopomap.org/" + str(zoom) + "/" + str(x) + "/" + str(y) + ".png"
-        return osm_url
-
-class OSMScout(SlippyMap):
-    def make_url(self, x, y, zoom):
-        osm_scout_url  = "http://localhost:8553/v1/tile?"
-        osm_scout_url += "daylight=1"
-        osm_scout_url += "&scale=1"
-        osm_scout_url += "&z=" + str(zoom)
-        osm_scout_url += "&x=" + str(x)
-        osm_scout_url += "&y=" + str(y)
-        return osm_scout_url
-
 class DebugMap(SlippyMap):
            
     def random_color(self,x,y,z):
@@ -190,9 +173,9 @@ class DebugMap(SlippyMap):
         b = d[2]
         return r,g,b
     
-    def get_slippy_tile(self,x,y,zoom):
+    def __download_slippy_tile_from_server__(self, x, y, zoom):
         """
-        @brief: get a slippy map tile.
+        @brief: get a monochrome map tile in a random color.
         """
         north_lat, west_lon = self.num2deg(x  ,y  ,zoom)
         south_lat, east_lon = self.num2deg(x+1,y+1,zoom)
