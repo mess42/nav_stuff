@@ -11,6 +11,19 @@ from numpy import pi
 import download_helpers
 import tile
 
+def get_mapping_of_names_to_classes():
+    """
+    @brief: Pointers to all classes that shall be usable.
+    (no base classes)
+    
+    @return d (dict)
+    """
+    d = {"SlippyMap": SlippyMap,
+         "DebugMap" : DebugMap,
+        }
+    return d
+    
+
 class SlippyMap(object):
     def __init__(self, url_template):
         self.cached_slippy_tiles = {}

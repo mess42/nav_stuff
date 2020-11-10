@@ -61,7 +61,6 @@ class MapWindow(Gtk.Window):
                 
         # Create Markers (overlay on map)
         self.marker_layer_widget = MarkerLayerWidget()
-        #self.marker_layer_widget.connect("draw", self.marker_layer_widget.draw_markers)
         self.canvas.add_overlay(self.marker_layer_widget)
 
         # pack/grid widgets

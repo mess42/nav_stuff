@@ -12,6 +12,19 @@ import numpy as np
 import serial
 import datetime
 
+def get_mapping_of_names_to_classes():
+    """
+    @brief: Pointers to all classes that shall be usable.
+    (no base classes)
+    
+    @return d (dict)
+    """
+    d = {"PositionSerialNMEA": PositionSerialNMEA,
+         "PositionGeoClue": PositionGeoClue,
+         "PositionSimulation": PositionSimulation,
+        }
+    return d
+
 class PositionProvider(object):
     def __init__(self, **params ):
         """
@@ -42,7 +55,7 @@ class PositionProvider(object):
         return success
 
 class PositionSerialNMEA(PositionProvider):
-    def connect(self, serial_port="/dev/ttyUSB1", timeout = 1.0):
+    def connect(self, timeout = 1.0):
         """
         Connect to a NMEA device on a serial port.
         """
