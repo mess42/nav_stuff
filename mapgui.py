@@ -7,9 +7,10 @@ from gi.repository import Gtk, GLib, GdkPixbuf
 
 import numpy as np
 import datetime
+import json
 
-import position_providers
 import map_providers
+import position_providers
 
 
 def array_to_pixbuf(arr):
@@ -47,10 +48,13 @@ class MapWindow(Gtk.Window):
             print("waiting for position fix ...")
 
         # Map provider
+        f = open("profiles.json","r")
+        j = json.load(f)
+        f.close()
         osm_url = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         otopo_url = "https://tile.opentopomap.org/{z}/{x}/{y}.png"
         osm_scout_url  = "http://localhost:8553/v1/tile?daylight=1&scale=1&z={z}&x={x}&y={y}"
-        self.map = map_providers.SlippyMap(url_template = otopo_url)
+        self.map = map_providers.DebugMap()
 
         # Create Map Canvas Widget       
         self.canvas = Gtk.Overlay().new()
