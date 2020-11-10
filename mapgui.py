@@ -29,7 +29,7 @@ def array_to_pixbuf(arr):
     return pix
 
 class MapWindow(Gtk.Window):
-    def __init__(self, profiles_filename = "profiles.json" ):
+    def __init__(self, profiles_filename = "profiles.json"):
         
         # Global window initialisation
         Gtk.Window.__init__(self)
