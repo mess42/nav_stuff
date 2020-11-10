@@ -29,7 +29,7 @@ def array_to_pixbuf(arr):
     return pix
 
 class MapWindow(Gtk.Window):
-    def __init__(self):
+    def __init__(self, profiles_filename = "profiles.json" ):
         
         # Global window initialisation
         Gtk.Window.__init__(self)
@@ -40,21 +40,15 @@ class MapWindow(Gtk.Window):
         
         update_delay_in_ms = 50
         
-        # Position provider
-        self.position_provider = position_providers.PositionSimulation()
-        valid_pos =  False
-        while not valid_pos:
-            valid_pos = self.position_provider.update_position()
-            print("waiting for position fix ...")
-
-        # Map provider
-        f = open("profiles.json","r")
-        j = json.load(f)
+        f = open(profiles_filename,"r")
+        profiles = json.load(f)
         f.close()
-        osm_url = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        otopo_url = "https://tile.opentopomap.org/{z}/{x}/{y}.png"
-        osm_scout_url  = "http://localhost:8553/v1/tile?daylight=1&scale=1&z={z}&x={x}&y={y}"
-        self.map = map_providers.DebugMap()
+        map_config = "DebugMap"
+        pos_config = "PositionSimulation"
+
+        # Create Map and Position provider
+        self.map               = self.make_provider_object( profile_type = "MapProviders",      profile_name = map_config, profiles = profiles, provider_dict = map_providers.get_mapping_of_names_to_classes() )
+        self.position_provider = self.make_provider_object( profile_type = "PositionProviders", profile_name = pos_config, profiles = profiles, provider_dict = position_providers.get_mapping_of_names_to_classes() )
 
         # Create Map Canvas Widget       
         self.canvas = Gtk.Overlay().new()
@@ -73,6 +67,29 @@ class MapWindow(Gtk.Window):
         grid.add(self.canvas)
         
         self.timeout_id = GLib.timeout_add(update_delay_in_ms, self.on_timeout, None)
+
+
+    def make_provider_object(self, profile_type, profile_name, profiles, provider_dict ):
+        """
+        @brief: make a map, position, or routing provider object.
+        
+        @param: profile_type (str)
+                Map or position or router
+        @param: profile_name (str)
+        @param: profiles (dict)
+                Must contain the entry profiles[profile_type][profile_name].
+                The entry is a dict with keys class_name and parameters.
+        @param: provider_dict (dict)
+                Mapping of class_name to a Class pointer.
+        
+        @return provider (object)
+        """
+        provider_class_name = profiles[profile_type][profile_name]["class_name"]
+        params              = profiles[profile_type][profile_name]["parameters"]
+        ProviderClass       = provider_dict[provider_class_name]
+        provider            = ProviderClass(**params)
+        return provider
+
           
     def on_timeout(self, data):
         self.position_provider.update_position()

@@ -12,10 +12,6 @@ import json
 
 # people who like braces also liked: Lisp
 d = {"MapProviders": {
-        "OpenStreetMap":
-            {"class_name":"SlippyMap",
-             "parameters":{"url_template":"https://tile.openstreetmap.org/{z}/{x}/{y}.png"} 
-            },
          "OpenTopoMap":
             {"class_name":"SlippyMap",
              "parameters":{"url_template":"https://tile.opentopomap.org/{z}/{x}/{y}.png"} 
@@ -24,6 +20,10 @@ d = {"MapProviders": {
             {"class_name":"SlippyMap",
              "parameters":{"url_template":"http://localhost:8553/v1/tile?daylight=1&scale=1&z={z}&x={x}&y={y}"} 
             },
+         "DebugMap":
+            {"class_name":"DebugMap",
+             "parameters":{"url_template":""} 
+            },            
         },
     "PositionProviders": {
         "SerialNMEA":

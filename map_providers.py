@@ -173,8 +173,7 @@ class SlippyMap(object):
         return large_tile
     
         
-class DebugMap(SlippyMap):
-           
+class DebugMap(SlippyMap):           
     def random_color(self,x,y,z):
         m = hashlib.md5()
         m.update(str(x).encode("ascii"))
