@@ -97,26 +97,35 @@ class Pin(object):
                  dot_fill_color = (1,1,1),
                  dot_border_color = (0,0,0)
                  ):
-        self.r = int(round(0.5*width)) # radius in px
-        self.t = int(round(height-self.r)) # distance from circle center to tip
         
-    def draw(self, ctx, x, y):
-        sina = r / h
-        alpha = np.arcsin(sina)
-        cosa = np.sqrt(1-sina**2)
-        dy = - h + r * sina
-        dx = -r*cosa
-        
-        ctx.set_source_rgb(0,0,1)
-        ctx.move_to(x    , y)
-        ctx.line_to(x+dx , y+dy)
-        ctx.arc(    x    , y-h, r, np.pi-alpha,alpha)
-        ctx.line_to(x    , y)
-        ctx.stroke_preserve()
+        # Color stuff
+        self.fill_color       = fill_color
+        self.border_color     = border_color
+        self.dot_fill_color   = dot_fill_color
+        self.dot_border_color = dot_border_color
 
-        ctx.set_source_rgb(1,0,0)
+        # Geometry stuff
+        self.r = int(round(0.5*width)) # radius in px
+        self.t = int(round(height-self.r)) # distance from circle center to tip        
+        sina = self.r / self.t
+        cosa = np.sqrt(1-sina**2)
+        self.phi0 = np.pi- np.arcsin(sina) # start angle of the upper arc
+        self.phi1 = np.arcsin(sina)        # stop angle of the upper arc
+        self.dy = - self.t + self.r * sina # y pos of the interface arc to tip
+        self.dx = -self.r*cosa             # x pos of the interface arc to tip
+        
+    def draw(self, ctx, x, y):      
+        ctx.move_to(x    , y)
+        ctx.line_to(x+self.dx , y+self.dy)
+        ctx.arc(    x    , y-self.t, self.r, self.phi0, self.phi1)
+        ctx.line_to(x    , y)
+        ctx.set_source_rgb(*self.border_color)
+        ctx.stroke_preserve()
+        ctx.set_source_rgb(*self.fill_color)
         ctx.fill()
 
-        ctx.set_source_rgb(0,1,0)
-        ctx.arc(    x , y-h, .4*r, 0, 2*np.pi)
+        ctx.arc(    x , y-self.t, .4*self.r, 0, 2*np.pi)
+        ctx.set_source_rgb(*self.dot_border_color)
+        ctx.stroke_preserve()
+        ctx.set_source_rgb(*self.dot_fill_color)
         ctx.fill()
