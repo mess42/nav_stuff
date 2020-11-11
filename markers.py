@@ -13,10 +13,8 @@ class MarkerLayerWidget(Gtk.DrawingArea):
         self.connect("draw", self.on_draw)
                 
         #TODO: make it controllable which markers are included in the list
-        #TODO: ego marker position should be based on angles, and not hard code the map center
         self.list_of_markers = [
-                                FixedXYMarker(drawer = Pin(fill_color=(0,1,0)), 
-                                              xy_rel_to_window_size = [0.5,0.5]),
+                                FollowingMarker(drawer = Pin(fill_color=(0,1,0))),
                                 FixedLatLonMarker(drawer = Pin(),
                                                   lat_deg = 50.97872,
                                                   lon_deg= 11.3319),
@@ -36,12 +34,12 @@ class MarkerLayerWidget(Gtk.DrawingArea):
         ctx.move_to(10,50)
         ctx.show_text( "drawn at local time: " + str( datetime.datetime.now() ) )
 
-    def update(self, cropped_tile):
+    def update(self, cropped_tile, latlon):
         """
         @brief: update the pixel positions of all markers
         """
         for mark in self.list_of_markers:           
-            mark.update(cropped_tile)
+            mark.update(cropped_tile, latlon)
         
         
 class Marker(object):
@@ -49,7 +47,6 @@ class Marker(object):
         self.drawer = drawer
         self.x      = 0
         self.y      = 0
-        raise NotImplementedError("This is a base class")
         
     def draw(self, ctx):
         self.drawer.draw(ctx, self.x, self.y)
@@ -65,13 +62,11 @@ class FixedXYMarker(Marker):
         
         Use for map-related GUI elements like scale bar or mini-compass.
         """
-        self.drawer                = drawer
+        Marker.__init__(self, drawer)
         self.xy_rel_to_window_size = xy_rel_to_window_size 
         self.xy_abs_offset         = xy_abs_offset
-        self.x = 0
-        self.y = 0
     
-    def update(self, cropped_tile):
+    def update(self, cropped_tile, latlon):
         self.x = self.xy_rel_to_window_size[0] * cropped_tile.xsize_px + self.xy_abs_offset[0]
         self.y = self.xy_rel_to_window_size[1] * cropped_tile.ysize_px + self.xy_abs_offset[1]
 
@@ -83,23 +78,18 @@ class FixedLatLonMarker(Marker):
         
         Use for fixed objects like Destination, waypoints, or points of interest.
         """
-        self.drawer  = drawer
+        Marker.__init__(self, drawer)
         self.lat_deg = lat_deg
         self.lon_deg = lon_deg
-        self.x = 0
-        self.y = 0
 
-    def update(self,cropped_tile):
+    def update(self,cropped_tile, latlon):
         self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = self.lat_deg, lon_deg = self.lon_deg)
 
         
 class FollowingMarker(Marker):
-    def __init__(self, drawer, init_lat=0, init_lon=0):
-        """
-        @brief: Marker following the ego position.
-        """
-        raise NotImplementedError()
-
+    def update( self, cropped_tile, latlon):
+        self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = latlon[0], lon_deg = latlon[1])
+    
 
 class Pin(object):
     def __init__(self, 
