@@ -15,8 +15,11 @@ class MarkerLayerWidget(Gtk.DrawingArea):
         #TODO: make it controllable which markers are included in the list
         #TODO: ego marker position should be based on angles, and not hard code the map center
         self.list_of_markers = [
-                                FixedXYMarker(drawer = Pin(), 
-                                              xy_rel_to_window_size = [0.5,0.5])
+                                FixedXYMarker(drawer = Pin(fill_color=(0,1,0)), 
+                                              xy_rel_to_window_size = [0.5,0.5]),
+                                FixedLatLonMarker(drawer = Pin(),
+                                                  lat_deg = 50.97872,
+                                                  lon_deg= 11.3319),
                                ]
  
     def on_draw(self, da, ctx):
@@ -46,13 +49,14 @@ class Marker(object):
         self.drawer = drawer
         self.x      = 0
         self.y      = 0
-        raise NotImplementedError()
+        raise NotImplementedError("This is a base class")
         
     def draw(self, ctx):
         self.drawer.draw(ctx, self.x, self.y)
     
     def update(self, cropped_tile):
-        raise NotImplementedError()
+        raise NotImplementedError("This is a base class")
+
 
 class FixedXYMarker(Marker):
     def __init__(self, drawer, xy_rel_to_window_size = [0,0], xy_abs_offset = [0,0] ):
@@ -70,15 +74,24 @@ class FixedXYMarker(Marker):
     def update(self, cropped_tile):
         self.x = self.xy_rel_to_window_size[0] * cropped_tile.xsize_px + self.xy_abs_offset[0]
         self.y = self.xy_rel_to_window_size[1] * cropped_tile.ysize_px + self.xy_abs_offset[1]
+
     
 class FixedLatLonMarker(Marker):
-    def __init__(self, drawer, lat=0, lon=0):
+    def __init__(self, drawer, lat_deg, lon_deg):
         """
-        @brief: Marker with a fixed position in latitude or longitude.
+        @brief: Marker with a fixed position in latitude and longitude.
         
         Use for fixed objects like Destination, waypoints, or points of interest.
         """
-        raise NotImplementedError()
+        self.drawer  = drawer
+        self.lat_deg = lat_deg
+        self.lon_deg = lon_deg
+        self.x = 0
+        self.y = 0
+
+    def update(self,cropped_tile):
+        self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = self.lat_deg, lon_deg = self.lon_deg)
+
         
 class FollowingMarker(Marker):
     def __init__(self, drawer, init_lat=0, init_lon=0):
@@ -97,7 +110,9 @@ class Pin(object):
                  dot_fill_color = (1,1,1),
                  dot_border_color = (0,0,0)
                  ):
-        
+        """
+        @brief: stores the geometry and draws a marker pin.
+        """
         # Color stuff
         self.fill_color       = fill_color
         self.border_color     = border_color
@@ -114,17 +129,30 @@ class Pin(object):
         self.dy = - self.t + self.r * sina # y pos of the interface arc to tip
         self.dx = -self.r*cosa             # x pos of the interface arc to tip
         
-    def draw(self, ctx, x, y):      
+    def draw(self, ctx, x, y):
+        """
+        @brief: draw the pin.
+        
+        @param ctx (Cairo context)
+        @param x (int) position of the tip apex in px
+        @param y (int) position of the tip apex in px
+        """
+        # Outline contour
         ctx.move_to(x    , y)
         ctx.line_to(x+self.dx , y+self.dy)
         ctx.arc(    x    , y-self.t, self.r, self.phi0, self.phi1)
         ctx.line_to(x    , y)
+        
+        # fill and stroke the outline
         ctx.set_source_rgb(*self.border_color)
         ctx.stroke_preserve()
         ctx.set_source_rgb(*self.fill_color)
         ctx.fill()
 
+        # the central dot
         ctx.arc(    x , y-self.t, .4*self.r, 0, 2*np.pi)
+        
+        # fill and stroke the dot
         ctx.set_source_rgb(*self.dot_border_color)
         ctx.stroke_preserve()
         ctx.set_source_rgb(*self.dot_fill_color)
