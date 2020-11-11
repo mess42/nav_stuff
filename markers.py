@@ -8,7 +8,6 @@ import datetime
 import numpy as np
 
 class MarkerLayerWidget(Gtk.DrawingArea):
-    
     def __init__(self):       
         Gtk.DrawingArea.__init__(self)
         self.connect("draw", self.on_draw)
@@ -35,6 +34,9 @@ class MarkerLayerWidget(Gtk.DrawingArea):
         ctx.show_text( "drawn at local time: " + str( datetime.datetime.now() ) )
 
     def update(self, cropped_tile):
+        """
+        @brief: update the pixel positions of all markers
+        """
         for mark in self.list_of_markers:           
             mark.update(cropped_tile)
         
@@ -87,12 +89,18 @@ class FollowingMarker(Marker):
 
 
 class Pin(object):
-    def __init__(self):
-        pass
+    def __init__(self, 
+                 width=20, 
+                 height = 30, 
+                 fill_color=(1,0,0), 
+                 border_color=(0,0,0),
+                 dot_fill_color = (1,1,1),
+                 dot_border_color = (0,0,0)
+                 ):
+        self.r = int(round(0.5*width)) # radius in px
+        self.t = int(round(height-self.r)) # distance from circle center to tip
         
     def draw(self, ctx, x, y):
-        r = 10 # radius in px
-        h = 2*r       # distance from circle center to tip
         sina = r / h
         alpha = np.arcsin(sina)
         cosa = np.sqrt(1-sina**2)
