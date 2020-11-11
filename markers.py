@@ -65,6 +65,10 @@ class FixedXYMarker(Marker):
         self.x = 0
         self.y = 0
     
+    def update(self, cropped_tile):
+        self.x = self.xy_rel_to_window_size[0] * cropped_tile.xsize_px + self.xy_abs_offset[0]
+        self.y = self.xy_rel_to_window_size[1] * cropped_tile.ysize_px + self.xy_abs_offset[1]
+    
 class FixedLatLonMarker(Marker):
     def __init__(self, drawer, lat=0, lon=0):
         """
