@@ -22,9 +22,6 @@ class MarkerLayerWidget(Gtk.DrawingArea):
                                                   desired_size_px = 50,
                                                   xy_rel_to_window_size = [0,1], 
                                                   xy_abs_offset = [20,-25]),
-                                FixedLatLonMarker(draftsman = Arrow(),
-                                                  lat_deg = 50.97872,
-                                                  lon_deg= 11.3319),
                                ]
  
     def on_draw(self, da, ctx):
@@ -37,12 +34,12 @@ class MarkerLayerWidget(Gtk.DrawingArea):
         for mark in self.list_of_markers:           
             mark.draw(ctx)
             
-    def update(self, cropped_tile, latlon):
+    def update(self, cropped_tile, position):
         """
         @brief: update the pixel positions of all markers
         """
         for mark in self.list_of_markers:           
-            mark.update(cropped_tile, latlon)
+            mark.update(cropped_tile, position)
         
         
 class Marker(object):
@@ -54,7 +51,7 @@ class Marker(object):
     def draw(self, ctx):
         self.draftsman.draw( ctx, x = self.x, y = self.y, heading_rad = 0 )
     
-    def update(self, cropped_tile, latlon):
+    def update(self, cropped_tile, position):
         raise NotImplementedError("This is a base class")
 
 
@@ -78,7 +75,7 @@ class FixedXYMarker(Marker):
         self.xy_rel_to_window_size = xy_rel_to_window_size 
         self.xy_abs_offset         = xy_abs_offset
     
-    def update(self, cropped_tile, latlon):
+    def update(self, cropped_tile, position):
         self.x = self.xy_rel_to_window_size[0] * cropped_tile.xsize_px + self.xy_abs_offset[0]
         self.y = self.xy_rel_to_window_size[1] * cropped_tile.ysize_px + self.xy_abs_offset[1]
 
@@ -94,7 +91,7 @@ class FixedLatLonMarker(Marker):
         self.lat_deg = lat_deg
         self.lon_deg = lon_deg
 
-    def update(self,cropped_tile, latlon):
+    def update(self,cropped_tile, position):
         self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = self.lat_deg, lon_deg = self.lon_deg)
 
         
@@ -102,8 +99,8 @@ class FollowingMarker(Marker):
     """
     @brief: Marker that follows the ego position.
     """
-    def update( self, cropped_tile, latlon):
-        self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = latlon[0], lon_deg = latlon[1])
+    def update( self, cropped_tile, position):
+        self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = position.latitude, lon_deg = position.longitude )
 
 
 class MetricScaleBarMarker(FixedXYMarker):
@@ -121,7 +118,7 @@ class MetricScaleBarMarker(FixedXYMarker):
                 s = str(int(self.candidate_sizes_m[i]//1000)) + " km"
             self.candidate_labels.append(s)
 
-    def update(self, cropped_tile, latlon):
+    def update(self, cropped_tile, position):
         candidate_sizes_px = self.candidate_sizes_m / cropped_tile.get_scale_in_m_per_px()
         
         # Find the scale size closest to the desired one

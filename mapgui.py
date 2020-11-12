@@ -105,7 +105,7 @@ class MapWindow(Gtk.Window):
                                     center_lon_deg = self.position_provider.longitude
                                     )
         self.map_layer_widget.update(cropped_tile)
-        self.marker_layer_widget.update(cropped_tile = cropped_tile, latlon = [ self.position_provider.latitude, self.position_provider.longitude])
+        self.marker_layer_widget.update(cropped_tile = cropped_tile, position = self.position_provider )
         
         repeat = True
         return repeat
