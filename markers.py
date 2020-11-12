@@ -45,11 +45,12 @@ class MarkerLayerWidget(Gtk.DrawingArea):
 class Marker(object):
     def __init__(self, draftsman, **params):
         self.draftsman = draftsman
-        self.x      = 0
-        self.y      = 0
+        self.x       = 0
+        self.y       = 0
+        self.heading = 0
         
     def draw(self, ctx):
-        self.draftsman.draw( ctx, x = self.x, y = self.y, heading_rad = 0 )
+        self.draftsman.draw( ctx, x = self.x, y = self.y, heading_rad = self.heading )
     
     def update(self, cropped_tile, position):
         raise NotImplementedError("This is a base class")
@@ -101,7 +102,7 @@ class FollowingMarker(Marker):
     """
     def update( self, cropped_tile, position):
         self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = position.latitude, lon_deg = position.longitude )
-
+        self.heading = position.heading
 
 class MetricScaleBarMarker(FixedXYMarker):
     def __init__(self, draftsman, xy_rel_to_window_size = [0,0], xy_abs_offset = [0,0], desired_size_px=50):
