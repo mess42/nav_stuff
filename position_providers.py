@@ -55,7 +55,7 @@ class PositionProvider(object):
         return success
 
 class PositionSerialNMEA(PositionProvider):
-    def connect(self, timeout = 1.0):
+    def connect(self, serial_port, timeout = 1.0):
         """
         Connect to a NMEA device on a serial port.
         """
