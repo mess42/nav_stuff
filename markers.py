@@ -22,6 +22,11 @@ class MarkerLayerWidget(Gtk.DrawingArea):
                                                   desired_size_px = 50,
                                                   xy_rel_to_window_size = [0,1], 
                                                   xy_abs_offset = [20,-25]),
+                                FixedLatLonMarkerWithAlternativeOffTilePointer(
+                                        draftsman = Pin(fill_color=(1,0,0)),
+                                        off_tile_draftsman= Arrow(fill_color=(0,0,0)), 
+                                        lat_deg = 50.97672,
+                                        lon_deg= 11.3319),
                                ]
  
     def on_draw(self, da, ctx):
@@ -95,6 +100,40 @@ class FixedLatLonMarker(Marker):
     def update(self,cropped_tile, position):
         self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = self.lat_deg, lon_deg = self.lon_deg)
 
+
+class FixedLatLonMarkerWithAlternativeOffTilePointer(Marker):
+    def __init__(self, draftsman, off_tile_draftsman, lat_deg, lon_deg):
+        """
+        @brief: Marker with a fixed position in latitude and longitude.
+        If the position is off the tile, and alternative marker is placed
+        at the border of the tile, pointing towards the position.
+        
+        Use for fixed objects like Destination, waypoints, or points of interest.
+        """
+        Marker.__init__(self, draftsman)
+        self.on_tile_draftsman  = self.draftsman
+        self.off_tile_draftsman = off_tile_draftsman
+        self.lat_deg = lat_deg
+        self.lon_deg = lon_deg
+        self.border = 10 # how close to the boder is "off" ?
+
+    def update(self,cropped_tile, position):
+        self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = self.lat_deg, lon_deg = self.lon_deg)
+        
+        if self.x < self.border or self.x > cropped_tile.xsize_px - self.border or self.y < self.border or self.y > cropped_tile.ysize_px - self.border:
+            self.draftsman = self.off_tile_draftsman
+            self.heading = np.arctan2( self.x - cropped_tile.xsize_px//2, cropped_tile.ysize_px//2 - self.y )
+            
+            # TODO: this is wrong, position should represent heading
+            self.x = max(self.x, self.border)
+            self.x = min(self.x, cropped_tile.xsize_px - self.border)
+            self.y = max(self.y, self.border)
+            self.y = min(self.y, cropped_tile.ysize_px - self.border)
+            
+        else:
+            self.draftsman = self.on_tile_draftsman
+            
+
         
 class FollowingMarker(Marker):
     """
@@ -110,13 +149,16 @@ class MetricScaleBarMarker(FixedXYMarker):
             raise Exception("This marker type requires an instance of ScaleBar as draftsman.")
         FixedXYMarker.__init__(self, draftsman=draftsman, xy_rel_to_window_size = xy_rel_to_window_size, xy_abs_offset=xy_abs_offset)
         self.desired_size_px   = desired_size_px
+        
+        # all candidate sizes from 1 km on must be integer multiples of 1 km for the following label code to work.
         self.candidate_sizes_m = np.array([10,20,50,100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000])
+        
         self.candidate_labels = []
         for i in range(len(self.candidate_sizes_m)):
             if self.candidate_sizes_m[i] < 1000:
                 s = str(self.candidate_sizes_m[i]) + " m"
             else:
-                s = str(int(self.candidate_sizes_m[i]//1000)) + " km"
+                s = str(self.candidate_sizes_m[i]//1000) + " km" 
             self.candidate_labels.append(s)
 
     def update(self, cropped_tile, position):
