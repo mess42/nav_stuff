@@ -14,14 +14,17 @@ class MarkerLayerWidget(Gtk.DrawingArea):
                 
         #TODO: make it controllable which markers are included in the list
         self.list_of_markers = [
-                                FollowingMarker(drawer = Pin(fill_color=(0,1,0))),
-                                FixedLatLonMarker(drawer = Pin(),
+                                FollowingMarker(draftsman = Pin(fill_color=(0,1,0))),
+                                FixedLatLonMarker(draftsman = Pin(fill_color=(1,0,1)),
                                                   lat_deg = 50.97872,
                                                   lon_deg= 11.3319),
-                                MetricScaleBarMarker(drawer = ScaleBar(), 
+                                MetricScaleBarMarker(draftsman = ScaleBar(), 
                                                   desired_size_px = 50,
                                                   xy_rel_to_window_size = [0,1], 
-                                                  xy_abs_offset = [35,-25]),
+                                                  xy_abs_offset = [20,-25]),
+                                FixedLatLonMarker(draftsman = Arrow(),
+                                                  lat_deg = 50.97872,
+                                                  lon_deg= 11.3319),
                                ]
  
     def on_draw(self, da, ctx):
@@ -43,20 +46,20 @@ class MarkerLayerWidget(Gtk.DrawingArea):
         
         
 class Marker(object):
-    def __init__(self, drawer, **params):
-        self.drawer = drawer
+    def __init__(self, draftsman, **params):
+        self.draftsman = draftsman
         self.x      = 0
         self.y      = 0
         
     def draw(self, ctx):
-        self.drawer.draw(ctx, self.x, self.y)
+        self.draftsman.draw( ctx, x = self.x, y = self.y, heading_rad = 0 )
     
     def update(self, cropped_tile, latlon):
         raise NotImplementedError("This is a base class")
 
 
 class FixedXYMarker(Marker):
-    def __init__(self, drawer, xy_rel_to_window_size = [0,0], xy_abs_offset = [0,0] ):
+    def __init__(self, draftsman, xy_rel_to_window_size = [0,0], xy_abs_offset = [0,0] ):
         """
         @brief: Marker with a fixed position compared to the window.
         
@@ -71,7 +74,7 @@ class FixedXYMarker(Marker):
                Absolute offset in pixels.
                The offset is applied after calculating the relative location.
         """
-        Marker.__init__(self, drawer)
+        Marker.__init__(self, draftsman)
         self.xy_rel_to_window_size = xy_rel_to_window_size 
         self.xy_abs_offset         = xy_abs_offset
     
@@ -81,13 +84,13 @@ class FixedXYMarker(Marker):
 
     
 class FixedLatLonMarker(Marker):
-    def __init__(self, drawer, lat_deg, lon_deg):
+    def __init__(self, draftsman, lat_deg, lon_deg):
         """
         @brief: Marker with a fixed position in latitude and longitude.
         
         Use for fixed objects like Destination, waypoints, or points of interest.
         """
-        Marker.__init__(self, drawer)
+        Marker.__init__(self, draftsman)
         self.lat_deg = lat_deg
         self.lon_deg = lon_deg
 
@@ -104,10 +107,10 @@ class FollowingMarker(Marker):
 
 
 class MetricScaleBarMarker(FixedXYMarker):
-    def __init__(self, drawer, xy_rel_to_window_size = [0,0], xy_abs_offset = [0,0], desired_size_px=50):
-        if type(drawer) != ScaleBar:
-            raise Exception("This marker type requires an instance of ScaleBar as drawer.")
-        FixedXYMarker.__init__(self, drawer=drawer, xy_rel_to_window_size = xy_rel_to_window_size, xy_abs_offset=xy_abs_offset)
+    def __init__(self, draftsman, xy_rel_to_window_size = [0,0], xy_abs_offset = [0,0], desired_size_px=50):
+        if type(draftsman) != ScaleBar:
+            raise Exception("This marker type requires an instance of ScaleBar as draftsman.")
+        FixedXYMarker.__init__(self, draftsman=draftsman, xy_rel_to_window_size = xy_rel_to_window_size, xy_abs_offset=xy_abs_offset)
         self.desired_size_px   = desired_size_px
         self.candidate_sizes_m = np.array([10,20,50,100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000])
         self.candidate_labels = []
@@ -124,15 +127,22 @@ class MetricScaleBarMarker(FixedXYMarker):
         # Find the scale size closest to the desired one
         i = np.argmin(abs(candidate_sizes_px - self.desired_size_px))
         
-        self.drawer.xsize = int(round(candidate_sizes_px[i]))
-        self.drawer.ysize = 15
-        self.drawer.label = self.candidate_labels[i]
+        self.draftsman.xsize = int(round(candidate_sizes_px[i]))
+        self.draftsman.ysize = 15
+        self.draftsman.label = self.candidate_labels[i]
         
         self.x = self.xy_rel_to_window_size[0] * cropped_tile.xsize_px + self.xy_abs_offset[0]
         self.y = self.xy_rel_to_window_size[1] * cropped_tile.ysize_px + self.xy_abs_offset[1]
 
 
-class Pin(object):
+class Draftsman(object):
+    def __init__(self, **params):
+        raise NotImplementedError()
+        
+    def draw(self, ctx, x, y, heading_rad):
+        raise NotImplementedError()
+
+class Pin(Draftsman):
     def __init__(self, 
                  width=20, 
                  height = 30, 
@@ -160,7 +170,7 @@ class Pin(object):
         self.dy = - self.t + self.r * sina # y pos of the interface arc to tip
         self.dx = -self.r*cosa             # x pos of the interface arc to tip
         
-    def draw(self, ctx, x, y):
+    def draw(self, ctx, x, y, heading_rad):
         """
         @brief: draw the pin.
         
@@ -190,16 +200,61 @@ class Pin(object):
         ctx.fill()
 
 
-class ScaleBar(object):
+class ScaleBar(Draftsman):
     def __init__(self, size_px=50, label="1 arbitrary unit", color=(0,0,0)):
         self.color =color
         self.xsize = size_px
         self.ysize = 0.2 * size_px
         self.label = label
         
-    def draw(self, ctx, x, y):
+    def draw(self, ctx, x, y, heading_rad):
         ctx.set_source_rgb(*self.color)
         ctx.rectangle(x,y, self.xsize, self.ysize)
         ctx.fill()
         ctx.move_to( x+self.xsize+5, y+self.ysize-1 )
         ctx.show_text( self.label )
+
+
+class Arrow(Draftsman):
+    def __init__(self, width=20, 
+                 length = 40,
+                 center = 0,
+                 fill_color=(1,0,0), 
+                 border_color=(0,0,0),
+                 ):
+        """
+        @param width (float) arrow head width 
+        @param length (float) total length
+        @param center (float) center position relative to arrow length
+                              0 means the draw methods draws the head on (x,y)
+                              1 means the draw methods draws the tail on (x,y)
+                              This is also the center of rotation
+        @param fill_color (list of 3 float)
+        @param border_color (list of 3 float)
+        """
+        self.fill_color = fill_color
+        self.border_color = border_color
+        
+        # define half the arrow
+        self.dx = width  *             np.array([0, 0.5, 0.15, 0.3, 0  ])
+        self.dy = length * (- center + np.array([0, 0.5, 0.4 , 1  , 0.9]))
+        
+        # autocomplete symmetrically
+        self.dx = np.hstack([self.dx, -self.dx[:-1][::-1] ])
+        self.dy = np.hstack([self.dy,  self.dy[:-1][::-1] ])
+        
+    def draw(self, ctx, x, y, heading_rad):        
+        xs = x + np.cos(heading_rad) * self.dx - np.sin(heading_rad) * self.dy
+        ys = y + np.sin(heading_rad) * self.dx + np.cos(heading_rad) * self.dy
+        
+        # draw polygon
+        ctx.move_to(xs[0],ys[0])
+        for i in np.arange(len(xs)-1)+1:
+            ctx.line_to(xs[i], ys[i])
+        
+        # fill and stroke the outline
+        ctx.set_source_rgb(*self.border_color)
+        ctx.stroke_preserve()
+        ctx.set_source_rgb(*self.fill_color)
+        ctx.fill()
+        
