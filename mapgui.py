@@ -5,28 +5,12 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, GdkPixbuf
 
-import numpy as np
 import json
 
 import providers.maps
 import providers.positions
-import markers
-
-
-def array_to_pixbuf(arr):
-    """ 
-    convert from numpy array to GdkPixbuf 
-    """
-    z     = arr.astype('uint8')
-    h,w,c = z.shape
-    assert c == 3 or c == 4
-    pix = None
-    if hasattr(GdkPixbuf.Pixbuf,'new_from_bytes'):
-        Z = GLib.Bytes.new(z.tobytes())
-        pix = GdkPixbuf.Pixbuf.new_from_bytes(Z, GdkPixbuf.Colorspace.RGB, c==4, 8, w, h, w*c)
-    else:
-        pix = GdkPixbuf.Pixbuf.new_from_data(z.tobytes(),  GdkPixbuf.Colorspace.RGB, c==4, 8, w, h, w*c, None, None)
-    return pix
+import widgets.marker_layer
+import widgets.map_layer
 
 class MapWindow(Gtk.Window):
     def __init__(self, 
@@ -61,11 +45,11 @@ class MapWindow(Gtk.Window):
         self.canvas = Gtk.Overlay().new()
 
         # Create Map (background layer)
-        self.map_layer_widget = MapLayerWidget()
+        self.map_layer_widget = widgets.map_layer.MapLayerWidget()
         self.canvas.add(self.map_layer_widget)
                 
         # Create Markers (overlay on map)
-        self.marker_layer_widget = markers.MarkerLayerWidget(map_copyright = self.map.map_copyright)
+        self.marker_layer_widget = widgets.marker_layer.MarkerLayerWidget(map_copyright = self.map.map_copyright)
         self.canvas.add_overlay(self.marker_layer_widget)
 
         # pack/grid widgets
@@ -130,15 +114,6 @@ class MapWindow(Gtk.Window):
         #TODO: write (possibly modified) config back to hard drive
         Gtk.main_quit(object_to_destroy)
         
-
-class MapLayerWidget(Gtk.Image):
-    def update(self, cropped_tile):
-        arr = cropped_tile.raster_image
-        pix = array_to_pixbuf(arr)
-        self.set_from_pixbuf(pix)
-
-
- 
         
 if __name__ == "__main__":
     win = MapWindow()
