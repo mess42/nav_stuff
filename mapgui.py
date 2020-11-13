@@ -8,8 +8,8 @@ from gi.repository import Gtk, GLib, GdkPixbuf
 import numpy as np
 import json
 
-import map_providers
-import position_providers
+import providers.maps
+import providers.positions
 import markers
 
 
@@ -43,8 +43,8 @@ class MapWindow(Gtk.Window):
         config   = self.json2dict(config_filename)
 
         # Create Map and Position provider
-        self.map      = self.make_provider_object( profile_type = "MapProviders",      profile_name = config["map_profile"], profiles = profiles, provider_dict = map_providers.get_mapping_of_names_to_classes() )
-        self.position = self.make_provider_object( profile_type = "PositionProviders", profile_name = config["pos_profile"], profiles = profiles, provider_dict = position_providers.get_mapping_of_names_to_classes() )
+        self.map      = self.make_provider_object( profile_type = "MapProviders",      profile_name = config["map_profile"], profiles = profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
+        self.position = self.make_provider_object( profile_type = "PositionProviders", profile_name = config["pos_profile"], profiles = profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
         
         # Create widgets and auto-update them
         self.create_widgets()

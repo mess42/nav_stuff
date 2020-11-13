@@ -8,8 +8,7 @@ import hashlib
 import numpy as np
 from numpy import pi
 
-import download_helpers
-import tile
+from providers import tile, download_helpers
 
 def get_mapping_of_names_to_classes():
     """
