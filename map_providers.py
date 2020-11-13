@@ -25,10 +25,11 @@ def get_mapping_of_names_to_classes():
     
 
 class SlippyMap(object):
-    def __init__(self, url_template):
+    def __init__(self, url_template, map_copyright):
         self.cached_slippy_tiles = {}
-        self.large_tile = tile.RasterTile(zoom=0)
+        self.large_tile = tile.RasterTile(zoom=0, map_copyright=map_copyright)
         self.url_template = url_template
+        self.map_copyright = map_copyright
         
     def make_url(self, x, y, zoom):
         url = self.url_template.replace("{x}", str(x) )
@@ -166,7 +167,8 @@ class SlippyMap(object):
                 image_large[y0:y1,x0:x1] = current_tile.raster_image
 
         # Put all data in a tile
-        large_tile = tile.RasterTile( raster_image   = image_large,
+        large_tile = tile.RasterTile( map_copyright  = self.map_copyright,
+                                      raster_image   = image_large,
                                       zoom           = zoom,
                                       angular_extent = {"north_lat": north_lat, "east_lon":  east_lon, "south_lat": south_lat, "west_lon":  west_lon }
                                     )
@@ -199,7 +201,8 @@ class DebugMap(SlippyMap):
         arr[:,:,1] = rgb[1]
         arr[:,:,2] = rgb[2]
         
-        slippy_tile = tile.RasterTile( raster_image   = arr,
+        slippy_tile = tile.RasterTile( map_copyright = self.map_copyright,
+                                       raster_image   = arr,
                                        zoom           = zoom,
                                        angular_extent = {"north_lat": north_lat, "east_lon":  east_lon, "south_lat": south_lat, "west_lon":  west_lon }
                               )

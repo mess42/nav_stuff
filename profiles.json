@@ -1,27 +1,39 @@
 {
     "MapProviders": {
-        "OpenTopoMap": {
+        "Open Topo Map": {
             "class_name": "SlippyMap", 
-            "parameters": {"url_template": "https://tile.opentopomap.org/{z}/{x}/{y}.png"}
+            "parameters": 
+                {
+                "url_template": "https://tile.opentopomap.org/{z}/{x}/{y}.png",
+                "map_copyright": "Map Data: (c) OpenStreetMap-Contributors SRTM | Map Layout: (c) OpenTopoMap CC-BY-SA"
+                }
         }, 
-        "OSMScout": {
+        "OSM Scout": {
             "class_name": "SlippyMap", 
-            "parameters": {"url_template": "http://localhost:8553/v1/tile?daylight=1&scale=1&z={z}&x={x}&y={y}"}
+            "parameters": 
+                {
+                "url_template": "http://localhost:8553/v1/tile?daylight=1&scale=1&z={z}&x={x}&y={y}",
+                "map_copyright": "Map Layout: OSM Scout Server (c) Rinigus GPL3 | Map data: See OSM Scout Server for further information."
+                }
         }, 
-        "DebugMap": {
+        "Debug Map": {
             "class_name": "DebugMap", 
-            "parameters": {"url_template": ""}
+            "parameters": 
+                {
+                "url_template": "",
+                "map_copyright": "Debug Map. Please choose another map profile. Normally, the map data copyright text would appear here."
+                }
         }
     },
     "PositionProviders": {
-        "SerialNMEA": {
+        "Serial NMEA": {
             "class_name": "PositionSerialNMEA", 
             "parameters": {"serial_port": "/dev/ttyUSB1"}
         }, 
         "GeoClue": {
             "class_name": "PositionGeoClue", "parameters": {}
         },
-        "PositionSimulation": {
+        "Position Simulation": {
             "class_name": "PositionSimulation", 
             "parameters": {}
         }

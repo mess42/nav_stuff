@@ -6,7 +6,7 @@ This file contains the Tile class.
 import numpy as np
 
 class RasterTile(object):
-    def __init__(self, zoom,
+    def __init__(self, zoom, map_copyright,
                        raster_image   = np.array([[[0,0,0]]]),
                        angular_extent = {"north_lat": 1E-9, 
                                          "south_lat": 0, 
@@ -23,15 +23,16 @@ class RasterTile(object):
                             north, south, east and west 
                             latitude and longitude in deg.
         """
-        self.zoom         = zoom
-        self.raster_image = raster_image
-        self.north_lat    = angular_extent["north_lat"]
-        self.south_lat    = angular_extent["south_lat"]
-        self.east_lon     = angular_extent["east_lon"]
-        self.west_lon     = angular_extent["west_lon"]
-        shap              = np.shape(raster_image)
-        self.ysize_px     = shap[0]
-        self.xsize_px     = shap[1]
+        self.zoom          = zoom
+        self.map_copyright = map_copyright
+        self.raster_image  = raster_image
+        self.north_lat     = angular_extent["north_lat"]
+        self.south_lat     = angular_extent["south_lat"]
+        self.east_lon      = angular_extent["east_lon"]
+        self.west_lon      = angular_extent["west_lon"]
+        shap               = np.shape(raster_image)
+        self.ysize_px      = shap[0]
+        self.xsize_px      = shap[1]
         
     def angles_to_pxpos(self, lat_deg, lon_deg):
         """
@@ -130,7 +131,8 @@ class RasterTile(object):
         north_lat, west_lon = self.pxpos_to_angles(iy=i_top,    ix=i_left )
         south_lat, east_lon = self.pxpos_to_angles(iy=i_bottom, ix=i_right)
         
-        cropped_tile = RasterTile(zoom           = self.zoom, 
+        cropped_tile = RasterTile(map_copyright  = self.map_copyright,
+                                  zoom           = self.zoom, 
                                   raster_image   = cropped_im,
                                   angular_extent = {"north_lat": north_lat, "south_lat": south_lat, "east_lon":  east_lon, "west_lon":  west_lon },
                                  )

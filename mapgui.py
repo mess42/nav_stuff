@@ -43,8 +43,8 @@ class MapWindow(Gtk.Window):
         f = open(profiles_filename,"r")
         profiles = json.load(f)
         f.close()
-        map_profile_name = "DebugMap" #TODO: this is a hard coded value. Better read from config file.
-        pos_profile_name = "PositionSimulation" #TODO: this is a hard coded value
+        map_profile_name = "Debug Map" #TODO: this is a hard coded value. Better read from config file.
+        pos_profile_name = "Position Simulation" #TODO: this is a hard coded value
 
         # Create Map and Position provider
         self.map               = self.make_provider_object( profile_type = "MapProviders",      profile_name = map_profile_name, profiles = profiles, provider_dict = map_providers.get_mapping_of_names_to_classes() )
@@ -58,7 +58,7 @@ class MapWindow(Gtk.Window):
         self.canvas.add(self.map_layer_widget)
                 
         # Create Markers (overlay on map)
-        self.marker_layer_widget = markers.MarkerLayerWidget()
+        self.marker_layer_widget = markers.MarkerLayerWidget(map_copyright = self.map.map_copyright)
         self.canvas.add_overlay(self.marker_layer_widget)
 
         # pack/grid widgets

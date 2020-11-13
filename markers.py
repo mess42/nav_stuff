@@ -8,7 +8,7 @@ import datetime
 import numpy as np
 
 class MarkerLayerWidget(Gtk.DrawingArea):
-    def __init__(self):       
+    def __init__(self, map_copyright):       
         Gtk.DrawingArea.__init__(self)
         self.connect("draw", self.on_draw)
                 
@@ -18,10 +18,15 @@ class MarkerLayerWidget(Gtk.DrawingArea):
                                 FixedLatLonMarker(draftsman = Pin(fill_color=(.8,0,0)),
                                                   lat_deg = 50.97872,
                                                   lon_deg= 11.3319),
+                                                  
                                 MetricScaleBarMarker(draftsman = ScaleBar(), 
                                                   desired_size_px = 50,
                                                   xy_rel_to_window_size = [0,1], 
                                                   xy_abs_offset = [20,-25]),
+                                FixedXYMarker(draftsman = Text(map_copyright), 
+                                                  xy_rel_to_window_size = [0,1], 
+                                                  xy_abs_offset = [130,-11]),
+                                
                                 FixedLatLonMarkerWithAlternativeOffTilePointer(
                                         draftsman = Pin(fill_color=(0,0,0)),
                                         off_tile_draftsman= Arrow(fill_color=(0,0,0)), 
@@ -306,4 +311,15 @@ class Arrow(Draftsman):
         ctx.stroke_preserve()
         ctx.set_source_rgb(*self.fill_color)
         ctx.fill()
+        
+
+class Text(Draftsman):
+    def __init__(self, text="1 arbitrary unit", color=(0,0,0)):
+        self.color = color
+        self.text  = text
+        
+    def draw(self, ctx, x, y, heading_rad):
+        ctx.set_source_rgb(*self.color)
+        ctx.move_to( x, y )
+        ctx.show_text( self.text )        
         
