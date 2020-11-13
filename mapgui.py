@@ -29,26 +29,31 @@ def array_to_pixbuf(arr):
     return pix
 
 class MapWindow(Gtk.Window):
-    def __init__(self, profiles_filename = "profiles.json"):
-        
-        # Global window initialisation
+    def __init__(self, 
+        profiles_filename  = "profiles.json", 
+        config_filename    = "config.json", 
+        update_delay_in_ms = 50
+        ):
+
         Gtk.Window.__init__(self)
         self.connect("destroy", self.on_destroy)
+        
+        profiles = self.json2dict(profiles_filename)
+        config   = self.json2dict(config_filename)
+
+        # Create Map and Position provider
+        self.map      = self.make_provider_object( profile_type = "MapProviders",      profile_name = config["map_profile"], profiles = profiles, provider_dict = map_providers.get_mapping_of_names_to_classes() )
+        self.position = self.make_provider_object( profile_type = "PositionProviders", profile_name = config["pos_profile"], profiles = profiles, provider_dict = position_providers.get_mapping_of_names_to_classes() )
+        
+        self.create_widgets()
+        
+        self.timeout_id = GLib.timeout_add(update_delay_in_ms, self.on_timeout, None)
+
+    def create_widgets(self):
+        # Global window initialisation
         self.set_title("Map Demo")
         self.set_border_width(0)
         self.maximize()
-        
-        update_delay_in_ms = 50 #TODO: this is a hard coded value
-        
-        f = open(profiles_filename,"r")
-        profiles = json.load(f)
-        f.close()
-        map_profile_name = "Debug Map" #TODO: this is a hard coded value. Better read from config file.
-        pos_profile_name = "Position Simulation" #TODO: this is a hard coded value
-
-        # Create Map and Position provider
-        self.map               = self.make_provider_object( profile_type = "MapProviders",      profile_name = map_profile_name, profiles = profiles, provider_dict = map_providers.get_mapping_of_names_to_classes() )
-        self.position_provider = self.make_provider_object( profile_type = "PositionProviders", profile_name = pos_profile_name, profiles = profiles, provider_dict = position_providers.get_mapping_of_names_to_classes() )
 
         # Create Map Canvas Widget       
         self.canvas = Gtk.Overlay().new()
@@ -65,9 +70,13 @@ class MapWindow(Gtk.Window):
         grid = Gtk.Grid()
         self.add(grid)
         grid.add(self.canvas)
-        
-        self.timeout_id = GLib.timeout_add(update_delay_in_ms, self.on_timeout, None)
 
+        
+    def json2dict(self, filename):
+        f = open(filename,"r")
+        dic = json.load(f)
+        f.close()
+        return dic
 
     def make_provider_object(self, profile_type, profile_name, profiles, provider_dict ):
         """
@@ -92,7 +101,7 @@ class MapWindow(Gtk.Window):
 
           
     def on_timeout(self, data):
-        self.position_provider.update_position()
+        self.position.update_position()
         
         window_size = self.get_size()
         map_width  = window_size[0]
@@ -101,11 +110,11 @@ class MapWindow(Gtk.Window):
         cropped_tile = self.map.get_cropped_tile( 
                                     xsize_px = map_width, 
                                     ysize_px = map_height, 
-                                    center_lat_deg = self.position_provider.latitude, 
-                                    center_lon_deg = self.position_provider.longitude
+                                    center_lat_deg = self.position.latitude, 
+                                    center_lon_deg = self.position.longitude
                                     )
         self.map_layer_widget.update(cropped_tile)
-        self.marker_layer_widget.update(cropped_tile = cropped_tile, position = self.position_provider )
+        self.marker_layer_widget.update(cropped_tile = cropped_tile, position = self.position )
         
         repeat = True
         return repeat
@@ -114,7 +123,7 @@ class MapWindow(Gtk.Window):
         """
         Actions to be performed before destroying this application.
         """
-        self.position_provider.disconnect()
+        self.position.disconnect()
         print("Position provider disconnected.")
         #TODO: write (possibly modified) config back to hard drive
         Gtk.main_quit(object_to_destroy)
