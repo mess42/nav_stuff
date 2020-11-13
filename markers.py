@@ -15,7 +15,7 @@ class MarkerLayerWidget(Gtk.DrawingArea):
         #TODO: make it controllable which markers are included in the list
         self.list_of_markers = [
                                 FollowingMarker(draftsman = Pin(fill_color=(0,1,0))),
-                                FixedLatLonMarker(draftsman = Pin(fill_color=(1,0,1)),
+                                FixedLatLonMarker(draftsman = Pin(fill_color=(.8,0,0)),
                                                   lat_deg = 50.97872,
                                                   lon_deg= 11.3319),
                                 MetricScaleBarMarker(draftsman = ScaleBar(), 
@@ -23,10 +23,10 @@ class MarkerLayerWidget(Gtk.DrawingArea):
                                                   xy_rel_to_window_size = [0,1], 
                                                   xy_abs_offset = [20,-25]),
                                 FixedLatLonMarkerWithAlternativeOffTilePointer(
-                                        draftsman = Pin(fill_color=(1,0,0)),
+                                        draftsman = Pin(fill_color=(0,0,0)),
                                         off_tile_draftsman= Arrow(fill_color=(0,0,0)), 
-                                        lat_deg = 50.97672,
-                                        lon_deg= 11.3319),
+                                        lat_deg = 50.97872,
+                                        lon_deg= 11.325),
                                ]
  
     def on_draw(self, da, ctx):
@@ -119,19 +119,28 @@ class FixedLatLonMarkerWithAlternativeOffTilePointer(Marker):
 
     def update(self,cropped_tile, position):
         self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = self.lat_deg, lon_deg = self.lon_deg)
+        self.heading = np.arctan2( self.x - cropped_tile.xsize_px//2, cropped_tile.ysize_px//2 - self.y )
+
+        self.draftsman = self.on_tile_draftsman
         
-        if self.x < self.border or self.x > cropped_tile.xsize_px - self.border or self.y < self.border or self.y > cropped_tile.ysize_px - self.border:
+        if (self.x < self.border):
             self.draftsman = self.off_tile_draftsman
-            self.heading = np.arctan2( self.x - cropped_tile.xsize_px//2, cropped_tile.ysize_px//2 - self.y )
-            
-            # TODO: this is wrong, position should represent heading
-            self.x = max(self.x, self.border)
-            self.x = min(self.x, cropped_tile.xsize_px - self.border)
-            self.y = max(self.y, self.border)
-            self.y = min(self.y, cropped_tile.ysize_px - self.border)
-            
-        else:
-            self.draftsman = self.on_tile_draftsman
+            self.x = self.border
+            self.y = cropped_tile.ysize_px//2 - ( self.x - cropped_tile.xsize_px//2 ) / np.tan(self.heading)
+        elif (self.x > cropped_tile.xsize_px - self.border):
+            self.draftsman = self.off_tile_draftsman
+            self.x = cropped_tile.xsize_px - self.border
+            self.y = cropped_tile.ysize_px//2 - ( self.x - cropped_tile.xsize_px//2 ) / np.tan(self.heading)
+
+        if (self.y < self.border):
+            self.draftsman = self.off_tile_draftsman
+            self.y = self.border
+            self.x = cropped_tile.xsize_px//2 + (cropped_tile.ysize_px//2 - self.y ) * np.tan(self.heading)
+        elif (self.y > cropped_tile.ysize_px - self.border):
+            self.draftsman = self.off_tile_draftsman
+            self.y = cropped_tile.ysize_px - self.border
+            self.x = cropped_tile.xsize_px//2 + (cropped_tile.ysize_px//2 - self.y ) * np.tan(self.heading)
+
             
 
         

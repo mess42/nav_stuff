@@ -176,10 +176,10 @@ class PositionSimulation(PositionProvider):
         self.is_connected = False
         
     def update_position(self):
-        phi = 0.1 * datetime.datetime.now().timestamp()
+        phi = 0.3 * datetime.datetime.now().timestamp()
         self.time      = datetime.datetime.now().timestamp()
         self.latitude  = 50.97872 + 0.001 * np.sin(phi)
         self.longitude = 11.3319 + 0.001 * np.cos(phi)
         self.velocity  = 0
-        self.heading   = 0
+        self.heading   = phi * 180 /np.pi
         return True
