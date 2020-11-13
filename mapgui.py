@@ -38,6 +38,7 @@ class MapWindow(Gtk.Window):
         Gtk.Window.__init__(self)
         self.connect("destroy", self.on_destroy)
         
+        # Load Configuration files
         profiles = self.json2dict(profiles_filename)
         config   = self.json2dict(config_filename)
 
@@ -45,9 +46,10 @@ class MapWindow(Gtk.Window):
         self.map      = self.make_provider_object( profile_type = "MapProviders",      profile_name = config["map_profile"], profiles = profiles, provider_dict = map_providers.get_mapping_of_names_to_classes() )
         self.position = self.make_provider_object( profile_type = "PositionProviders", profile_name = config["pos_profile"], profiles = profiles, provider_dict = position_providers.get_mapping_of_names_to_classes() )
         
+        # Create widgets and auto-update them
         self.create_widgets()
-        
         self.timeout_id = GLib.timeout_add(update_delay_in_ms, self.on_timeout, None)
+
 
     def create_widgets(self):
         # Global window initialisation
