@@ -6,6 +6,7 @@ Helper routines for server communication
 from PIL import PngImagePlugin
 import numpy as np
 import requests
+import json
 
 
 class FakeFileHandle(object):
@@ -58,3 +59,16 @@ def remote_png_to_numpy(url):
     pil_image   = PngImagePlugin.PngImageFile(filehandle).convert("RGB")
     arr         = np.array(pil_image, dtype=int)
     return arr
+
+def remote_json_to_py(url):
+    """
+    @brief: Downlad a JSON file to RAM and convert it to a python type.
+    
+    @param  url (str) Remote file location
+    @return p (list or dict)
+    """
+    json_request = requests.get(url)
+    filehandle  = FakeFileHandle( content = json_request.content )
+    p = json.load(filehandle)
+    return p
+    

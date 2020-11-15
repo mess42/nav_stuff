@@ -3,7 +3,7 @@
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib, GdkPixbuf
+from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 
 import json
 
@@ -41,16 +41,26 @@ class MapWindow(Gtk.Window):
         self.set_border_width(0)
         self.maximize()
 
-        # Create Map Canvas Widget       
+        # Create Map Canvas
         self.canvas = Gtk.Overlay().new()
 
-        # Create Map (background layer)
-        self.map_layer_widget = widgets.map_layer.MapLayerWidget()
-        self.canvas.add(self.map_layer_widget)
-                
-        # Create Markers (overlay on map)
-        self.marker_layer_widget = widgets.marker_layer.MarkerLayerWidget(map_copyright = self.map.map_copyright)
-        self.canvas.add_overlay(self.marker_layer_widget)
+        # Create Map (background layer) and Markers (Overlay on map)
+        self.map_layer = widgets.map_layer.MapLayerWidget()
+        self.canvas.add(self.map_layer)
+        self.marker_layer = widgets.marker_layer.MarkerLayerWidget(map_copyright = self.map.map_copyright)
+        self.canvas.add_overlay(self.marker_layer)
+
+        # The Button layer contains a lot of interactive elements,
+        # so let's create every element explicitly here
+        self.button_layer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.canvas.add_overlay(self.button_layer)
+
+        self.entry = Gtk.Entry()
+        self.entry.set_text("Hello World")
+        self.entry.connect("activate", self.on_search_activated)
+        #self.entry.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1,1,1,.9))
+        self.button_layer.add(self.entry)
+        
 
         # pack/grid widgets
         grid = Gtk.Grid()
@@ -63,6 +73,7 @@ class MapWindow(Gtk.Window):
         dic = json.load(f)
         f.close()
         return dic
+
 
     def make_provider_object(self, profile_type, profile_name, profiles, provider_dict ):
         """
@@ -85,6 +96,9 @@ class MapWindow(Gtk.Window):
         provider            = ProviderClass(**params)
         return provider
 
+    def on_search_activated(self, entry):
+        text = entry.get_text()
+        print("Let's search for", text)
           
     def on_timeout(self, data):
         self.position.update_position()
@@ -99,8 +113,8 @@ class MapWindow(Gtk.Window):
                                     center_lat_deg = self.position.latitude, 
                                     center_lon_deg = self.position.longitude
                                     )
-        self.map_layer_widget.update(cropped_tile)
-        self.marker_layer_widget.update(cropped_tile = cropped_tile, position = self.position )
+        self.map_layer.update(cropped_tile)
+        self.marker_layer.update(cropped_tile = cropped_tile, position = self.position )
         
         repeat = True
         return repeat

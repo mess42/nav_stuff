@@ -265,7 +265,7 @@ class Arrow(Draftsman):
         
 
 class Text(Draftsman):
-    def __init__(self, text="1 arbitrary unit", color=(0,0,0)):
+    def __init__(self, text, color=(0,0,0)):
         self.color = color
         self.text  = text
         
