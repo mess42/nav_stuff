@@ -41,8 +41,18 @@ class MapWindow(Gtk.Window):
         self.set_border_width(0)
         self.maximize()
 
+
+        self.widgets = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        
+        self.entry = Gtk.Entry()
+        self.entry.set_text("Hello World")
+        self.entry.connect("activate", self.on_search_activated)
+        self.widgets.add(self.entry)
+        
+
         # Create Map Canvas
         self.canvas = Gtk.Overlay().new()
+        self.widgets.add(self.canvas)
 
         # Create Map (background layer) and Markers (Overlay on map)
         self.map_layer = widgets.map_layer.MapLayerWidget()
@@ -50,23 +60,14 @@ class MapWindow(Gtk.Window):
         self.marker_layer = widgets.marker_layer.MarkerLayerWidget(map_copyright = self.map.map_copyright)
         self.canvas.add_overlay(self.marker_layer)
 
-        # The Button layer contains a lot of interactive elements,
-        # so let's create every element explicitly here
-        self.button_layer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.canvas.add_overlay(self.button_layer)
-
-        self.entry = Gtk.Entry()
-        self.entry.set_text("Hello World")
-        self.entry.connect("activate", self.on_search_activated)
-        #self.entry.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1,1,1,.9))
-        self.button_layer.add(self.entry)
         
 
         # pack/grid widgets
-        grid = Gtk.Grid()
-        self.add(grid)
-        grid.add(self.canvas)
-
+        #grid = Gtk.Grid()
+        #self.add(grid)
+        #grid.add(self.canvas)
+        self.add(self.widgets)
+        self.show_all()
         
     def json2dict(self, filename):
         f = open(filename,"r")
@@ -103,9 +104,13 @@ class MapWindow(Gtk.Window):
     def on_timeout(self, data):
         self.position.update_position()
         
+        #TODO: the following map size allocation only works 
+        #      if self.widgets is a vertical box (portrait mode)
+        #      and if self.canvas is a direct child of self.widgets
         window_size = self.get_size()
-        map_width  = window_size[0]
-        map_height = window_size[1]
+        sum_of_all_widget_heights_except_map_canvas = sum( list( w.get_allocation().height for w in self.widgets.get_children() if w is not self.canvas) )
+        map_width = window_size[0]
+        map_height = window_size[1] - sum_of_all_widget_heights_except_map_canvas
 
         cropped_tile = self.map.get_cropped_tile( 
                                     xsize_px = map_width, 
