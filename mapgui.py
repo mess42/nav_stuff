@@ -3,15 +3,17 @@
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
+from gi.repository import Gtk, GLib
 
 import json
+import numpy as np
 
 import providers.maps
 import providers.positions
 import providers.search
 import widgets.marker_layer
 import widgets.map_layer
+import widgets.result_button
 
 class MapWindow(Gtk.Window):
     def __init__(self, 
@@ -29,6 +31,7 @@ class MapWindow(Gtk.Window):
 
         # Create Map and Position provider
         self.map      = self.make_provider_object( profile_type = "MapProviders",      profile_name = config["map_profile"], profiles = profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
+        self.cropped_tile = providers.tile.RasterTile(zoom=0, map_copyright="")
         self.position = self.make_provider_object( profile_type = "PositionProviders", profile_name = config["pos_profile"], profiles = profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
         self.search   = providers.search.Nominatim(url_template = "https://nominatim.openstreetmap.org/search/{query}?format=json") # TODO: do this via config
         
@@ -98,24 +101,38 @@ class MapWindow(Gtk.Window):
         return provider
 
     def on_search_activated(self, entry):
-        for child in self.result_layer.get_children():
-            self.result_layer.remove(child)
         
         list_of_result_dicts = self.search.find( entry.get_text() )
 
-        for i in range(len(list_of_result_dicts)):
-            res = list_of_result_dicts[i]
-            grey  = 1 - .2 * (i%2)
-
-            ev = Gtk.EventBox()
-            ev.override_background_color( Gtk.StateType.NORMAL, Gdk.RGBA(grey,grey,grey,1) )
-            self.result_layer.add(ev)
+        for res in list_of_result_dicts:
+            y,x = self.cropped_tile.angles_to_pxpos(lat_deg = float(res["lat"]), lon_deg=float(res["lon"]) )
+            dy = x - self.cropped_tile.xsize_px//2 # TODO: hard coded assumption that ego position is at tile center
+            dx = y - self.cropped_tile.ysize_px//2
+            res["distance"] = self.cropped_tile.get_scale_in_m_per_px() * np.sqrt( dx**2 + dy**2 ) 
+            res["azimuth"]  = 180 / np.pi * np.arctan2(dy,-dx)
             
-            lab = Gtk.Label(label=str(res["display_name"]))
-            lab.set_xalign(0)
-            ev.add(lab)
+            dir_to_name = {337.5:"North-West", 292.5:"West", 247.5:"South-West", 202.5:"South", 157.5:"South-East", 112.5:"East", 67.5:"North-East", 22.5 :"North" }
+            borders = np.array(list(dir_to_name.keys()), dtype=float)
+            direction  = borders[-1]
+            for b in borders:
+                if res["azimuth"] % 360 <= b:
+                    direction = b
+            label = str(res["display_name"]) + "\n" + str(np.round(res["distance"]/1000,1)) + " km " + dir_to_name[direction]
+            
+            button = widgets.result_button.ResultButton( label = label, result = res )
+            button.connect("clicked", self.on_search_result_clicked)
+            self.result_layer.add(button)
 
         self.result_layer.show_all()
+        
+    def on_search_result_clicked(self, button):
+        for child in self.result_layer.get_children():
+            self.result_layer.remove(child)
+        self.entry.set_text(button.result["display_name"])
+        dest_lat = button.result["lat"]
+        dest_lon = button.result["lon"]
+        print("new destination", dest_lat, dest_lon)
+        #TODO:actually det the destination
                   
     def on_timeout(self, data):
         self.position.update_position()
@@ -129,14 +146,14 @@ class MapWindow(Gtk.Window):
         map_width = window_size[0]
         map_height = window_size[1] - sum_of_all_widget_heights_except_map_canvas
 
-        cropped_tile = self.map.get_cropped_tile( 
+        self.cropped_tile = self.map.get_cropped_tile( 
                                     xsize_px = map_width, 
                                     ysize_px = map_height, 
                                     center_lat_deg = self.position.latitude, 
                                     center_lon_deg = self.position.longitude
                                     )
-        self.map_layer.update(cropped_tile)
-        self.marker_layer.update(cropped_tile = cropped_tile, position = self.position )
+        self.map_layer.update(self.cropped_tile)
+        self.marker_layer.update(cropped_tile = self.cropped_tile, position = self.position )
         
         repeat = True
         return repeat
