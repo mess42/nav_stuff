@@ -9,6 +9,7 @@ import json
 
 import providers.maps
 import providers.positions
+import providers.search
 import widgets.marker_layer
 import widgets.map_layer
 
@@ -29,6 +30,7 @@ class MapWindow(Gtk.Window):
         # Create Map and Position provider
         self.map      = self.make_provider_object( profile_type = "MapProviders",      profile_name = config["map_profile"], profiles = profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
         self.position = self.make_provider_object( profile_type = "PositionProviders", profile_name = config["pos_profile"], profiles = profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
+        self.search   = providers.search.Nominatim(url_template = "https://nominatim.openstreetmap.org/search/{query}?format=json") # TODO: do this via config
         
         # Create widgets and auto-update them
         self.create_widgets()
@@ -60,12 +62,6 @@ class MapWindow(Gtk.Window):
         self.marker_layer = widgets.marker_layer.MarkerLayerWidget(map_copyright = self.map.map_copyright)
         self.canvas.add_overlay(self.marker_layer)
 
-        
-
-        # pack/grid widgets
-        #grid = Gtk.Grid()
-        #self.add(grid)
-        #grid.add(self.canvas)
         self.add(self.widgets)
         self.show_all()
         
@@ -100,6 +96,9 @@ class MapWindow(Gtk.Window):
     def on_search_activated(self, entry):
         text = entry.get_text()
         print("Let's search for", text)
+        results = self.search.find(text)
+        for i in range(len(results)):
+            print( i, " : ", results[i]["display_name"])
           
     def on_timeout(self, data):
         self.position.update_position()
@@ -107,6 +106,7 @@ class MapWindow(Gtk.Window):
         #TODO: the following map size allocation only works 
         #      if self.widgets is a vertical box (portrait mode)
         #      and if self.canvas is a direct child of self.widgets
+        #      Also, this is fragile and inelegant.
         window_size = self.get_size()
         sum_of_all_widget_heights_except_map_canvas = sum( list( w.get_allocation().height for w in self.widgets.get_children() if w is not self.canvas) )
         map_width = window_size[0]
