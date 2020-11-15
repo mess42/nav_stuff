@@ -56,11 +56,15 @@ class MapWindow(Gtk.Window):
         self.canvas = Gtk.Overlay().new()
         self.widgets.add(self.canvas)
 
-        # Create Map (background layer) and Markers (Overlay on map)
+        # Create Map (background layer) 
+        # and Markers (Overlay on map)
+        # and Search results (Overlay on markers)
         self.map_layer = widgets.map_layer.MapLayerWidget()
         self.canvas.add(self.map_layer)
         self.marker_layer = widgets.marker_layer.MarkerLayerWidget(map_copyright = self.map.map_copyright)
         self.canvas.add_overlay(self.marker_layer)
+        self.result_layer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.canvas.add_overlay(self.result_layer)
 
         self.add(self.widgets)
         self.show_all()
@@ -94,12 +98,25 @@ class MapWindow(Gtk.Window):
         return provider
 
     def on_search_activated(self, entry):
-        text = entry.get_text()
-        print("Let's search for", text)
-        results = self.search.find(text)
-        for i in range(len(results)):
-            print( i, " : ", results[i]["display_name"])
-          
+        for child in self.result_layer.get_children():
+            self.result_layer.remove(child)
+        
+        list_of_result_dicts = self.search.find( entry.get_text() )
+
+        for i in range(len(list_of_result_dicts)):
+            res = list_of_result_dicts[i]
+            grey  = 1 - .2 * (i%2)
+
+            ev = Gtk.EventBox()
+            ev.override_background_color( Gtk.StateType.NORMAL, Gdk.RGBA(grey,grey,grey,1) )
+            self.result_layer.add(ev)
+            
+            lab = Gtk.Label(label=str(res["display_name"]))
+            lab.set_xalign(0)
+            ev.add(lab)
+
+        self.result_layer.show_all()
+                  
     def on_timeout(self, data):
         self.position.update_position()
         
