@@ -76,3 +76,13 @@ def calc_properties_of_airline(lat1_deg, lon1_deg, lat2_deg, lon2_deg, r = 63650
             "azimuth_from_point_1_towards_2_deg": C * 180/pi,
             "azimuth_from_point_2_towards_1_deg": B * 180/pi,
             }
+    
+def azimuth_to_nesw_string(azim_deg):
+    dir_to_name = {337.5:"North-West", 292.5:"West", 247.5:"South-West", 202.5:"South", 157.5:"South-East", 112.5:"East", 67.5:"North-East", 22.5 :"North" }
+    borders = np.array(list(dir_to_name.keys()), dtype=float)
+    direction  = borders[-1]
+    for b in borders:
+        if azim_deg % 360 <= b:
+            direction = b
+    nesw_string = dir_to_name[direction]
+    return nesw_string

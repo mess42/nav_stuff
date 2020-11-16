@@ -14,6 +14,7 @@ import providers.search
 import widgets.marker_layer
 import widgets.map_layer
 import widgets.result_button
+import calc.angles
 
 class MapWindow(Gtk.Window):
     def __init__(self, 
@@ -31,7 +32,6 @@ class MapWindow(Gtk.Window):
 
         # Create Map and Position provider
         self.map      = self.make_provider_object( profile_type = "MapProviders",      profile_name = config["map_profile"], profiles = profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
-        self.cropped_tile = providers.tile.RasterTile(zoom=0, map_copyright="")
         self.position = self.make_provider_object( profile_type = "PositionProviders", profile_name = config["pos_profile"], profiles = profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
         self.search   = self.make_provider_object( profile_type = "SearchProviders",   profile_name = config["search_profile"], profiles = profiles, provider_dict = providers.search.get_mapping_of_names_to_classes() )
                         
@@ -102,31 +102,39 @@ class MapWindow(Gtk.Window):
 
     def on_search_activated(self, entry):
         
+        # remove search results from previus search
+        for child in self.result_layer.get_children():
+            self.result_layer.remove(child)
+        
+        # request results from the search provider
         list_of_result_dicts = self.search.find( entry.get_text() )
 
-        for res in list_of_result_dicts:
-            # TODO: calculate distance based on lat and lon, not on pixel distances
-            # which can be wrong for long distances (Mercator projection is misleading)
-            y,x = self.cropped_tile.angles_to_pxpos(lat_deg = float(res["lat"]), lon_deg=float(res["lon"]) )
-            dy = x - self.cropped_tile.xsize_px//2 # TODO: hard coded assumption that ego position is at tile center
-            dx = y - self.cropped_tile.ysize_px//2
-            res["distance"] = self.cropped_tile.get_scale_in_m_per_px() * np.sqrt( dx**2 + dy**2 ) 
-            res["azimuth"]  = 180 / np.pi * np.arctan2(dy,-dx)
+        # make a Button for each result
+        for res in list_of_result_dicts:           
+            airline = calc.angles.calc_properties_of_airline(lat1_deg = self.position.latitude,
+                                                             lon1_deg = self.position.longitude,
+                                                             lat2_deg = float(res["lat"]),
+                                                             lon2_deg = float(res["lon"]),
+                                                             )
+            rounded_distance_km = airline["distance_m"]
+            if airline["distance_m"] < 10000:
+                rounded_distance_km = str(np.round(airline["distance_m"]/1000,1))
+            elif airline["distance_m"] < 100000:
+                rounded_distance_km = str(int(np.round(airline["distance_m"]/1000)))
+            elif airline["distance_m"] < 1000000:
+                rounded_distance_km = str(int(np.round(airline["distance_m"]/1000,-1)))
+            else:
+                rounded_distance_km = str(int(np.round(airline["distance_m"]/1000,-2)))
+                
+            nesw                = calc.angles.azimuth_to_nesw_string(azim_deg = airline["azimuth_from_point_1_towards_2_deg"])
             
-            dir_to_name = {337.5:"North-West", 292.5:"West", 247.5:"South-West", 202.5:"South", 157.5:"South-East", 112.5:"East", 67.5:"North-East", 22.5 :"North" }
-            borders = np.array(list(dir_to_name.keys()), dtype=float)
-            direction  = borders[-1]
-            for b in borders:
-                if res["azimuth"] % 360 <= b:
-                    direction = b
-            label = str(res["display_name"]) + "\n" + str(np.round(res["distance"]/1000,1)) + " km " + dir_to_name[direction]
-            
+            label = str(res["display_name"]) + "\n" + rounded_distance_km + " km " + nesw
             button = widgets.result_button.ResultButton( label = label, result = res )
             button.connect("clicked", self.on_search_result_clicked)
             self.result_layer.add(button)
 
         self.result_layer.show_all()
-        
+
     def on_search_result_clicked(self, button):
         
         for child in self.result_layer.get_children():
@@ -149,14 +157,14 @@ class MapWindow(Gtk.Window):
         map_width = window_size[0]
         map_height = window_size[1] - sum_of_all_widget_heights_except_map_canvas
 
-        self.cropped_tile = self.map.get_cropped_tile( 
+        cropped_tile = self.map.get_cropped_tile( 
                                     xsize_px = map_width, 
                                     ysize_px = map_height, 
                                     center_lat_deg = self.position.latitude, 
                                     center_lon_deg = self.position.longitude
                                     )
-        self.map_layer.update(self.cropped_tile)
-        self.marker_layer.update(cropped_tile = self.cropped_tile, position = self.position )
+        self.map_layer.update(cropped_tile)
+        self.marker_layer.update(cropped_tile = cropped_tile, position = self.position )
         
         repeat = True
         return repeat
