@@ -29,17 +29,21 @@ class Nominatim(SearchProvider):
         query = urllib.parse.quote(query) # encode special characters, URL style
         url = self.url_template.replace("{query}", query)
         search_results = providers.download_helpers.remote_json_to_py(url)
+        search_results = self.postprocessing(search_results)
+        return search_results
+    
+    def postprocessing(self, search_results):
         return search_results
 
-class OSMScout(SearchProvider):
+class OSMScout(Nominatim):
     def __init__(self):
-        self.url_template = "http://localhost:8553/v1/search?limit=10&search={query}"
+        Nominatim.__init__(self, url_template = "http://localhost:8553/v1/search?limit=10&search={query}")
         
-    def find(self, query):
-        query = urllib.parse.quote(query) # encode special characters, URL style
-        url = self.url_template.replace("{query}", query)
-        search_results = providers.download_helpers.remote_json_to_py(url)
-        print("search_result:", type(search_results), search_results )
+    def postprocessing(self, search_results):
+        print("search_result:", search_results[0].keys() )
+        for res in search_results:
+            res["lon"] = res["lng"]
+            res["display_name"] = res["title"]
         return search_results
 
     
