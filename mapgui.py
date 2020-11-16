@@ -105,6 +105,8 @@ class MapWindow(Gtk.Window):
         list_of_result_dicts = self.search.find( entry.get_text() )
 
         for res in list_of_result_dicts:
+            # TODO: calculate distance based on lat and lon, not on pixel distances
+            # which can be wrong for long distances (Mercator projection is misleading)
             y,x = self.cropped_tile.angles_to_pxpos(lat_deg = float(res["lat"]), lon_deg=float(res["lon"]) )
             dy = x - self.cropped_tile.xsize_px//2 # TODO: hard coded assumption that ego position is at tile center
             dx = y - self.cropped_tile.ysize_px//2
@@ -126,13 +128,14 @@ class MapWindow(Gtk.Window):
         self.result_layer.show_all()
         
     def on_search_result_clicked(self, button):
+        
         for child in self.result_layer.get_children():
             self.result_layer.remove(child)
+        
         self.entry.set_text(button.result["display_name"])
-        dest_lat = button.result["lat"]
-        dest_lon = button.result["lon"]
-        print("new destination", dest_lat, dest_lon)
-        #TODO:actually det the destination
+        
+        self.marker_layer.make_marker_list( destination = button.result, 
+                                           map_copyright= self.map.map_copyright)
                   
     def on_timeout(self, data):
         self.position.update_position()
