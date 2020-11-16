@@ -4,6 +4,19 @@
 import providers.download_helpers
 import urllib.parse
 
+def get_mapping_of_names_to_classes():
+    """
+    @brief: Pointers to all classes that shall be usable.
+    (no base classes)
+    
+    @return d (dict)
+    """
+    d = {"Nominatim": Nominatim,
+         "OSMScout" : OSMScout,
+        }
+    return d
+
+
 class SearchProvider(object):
     def find(self, query):
         raise NotImplementedError()
@@ -17,7 +30,18 @@ class Nominatim(SearchProvider):
         url = self.url_template.replace("{query}", query)
         search_results = providers.download_helpers.remote_json_to_py(url)
         return search_results
-    
+
+class OSMScout(SearchProvider):
+    def __init__(self):
+        self.url_template = "http://localhost:8553/v1/search?limit=10&search={query}"
+        
+    def find(self, query):
+        query = urllib.parse.quote(query) # encode special characters, URL style
+        url = self.url_template.replace("{query}", query)
+        search_results = providers.download_helpers.remote_json_to_py(url)
+        print("search_result:", type(search_results), search_results )
+        return search_results
+
     
 if __name__ == "__main__":
     

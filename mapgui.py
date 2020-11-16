@@ -33,8 +33,8 @@ class MapWindow(Gtk.Window):
         self.map      = self.make_provider_object( profile_type = "MapProviders",      profile_name = config["map_profile"], profiles = profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
         self.cropped_tile = providers.tile.RasterTile(zoom=0, map_copyright="")
         self.position = self.make_provider_object( profile_type = "PositionProviders", profile_name = config["pos_profile"], profiles = profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
-        self.search   = providers.search.Nominatim(url_template = "https://nominatim.openstreetmap.org/search/{query}?format=json") # TODO: do this via config
-        
+        self.search   = self.make_provider_object( profile_type = "SearchProviders",   profile_name = config["search_profile"], profiles = profiles, provider_dict = providers.search.get_mapping_of_names_to_classes() )
+                        
         # Create widgets and auto-update them
         self.create_widgets()
         self.timeout_id = GLib.timeout_add(update_delay_in_ms, self.on_timeout, None)

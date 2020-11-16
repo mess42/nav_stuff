@@ -37,5 +37,15 @@
             "class_name": "PositionSimulation", 
             "parameters": {}
         }
+    },
+    "SearchProviders": {
+        "Nominatim": {
+            "class_name": "Nominatim",
+            "parameters": {"url_template": "https://nominatim.openstreetmap.org/search/{query}?format=json"}
+        },
+        "OSMScout":{
+            "class_name": "OSMScout",
+            "parameters": {}
+        }
     }
 }

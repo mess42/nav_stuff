@@ -1,4 +1,5 @@
 {
     "map_profile": "Debug Map",
-    "pos_profile": "Position Simulation"
+    "pos_profile": "Position Simulation",
+    "search_profile": "Nominatim"
 }
