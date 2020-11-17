@@ -32,7 +32,23 @@ class SlippyMap(object):
         self.max_zoom = max_zoom
         self.current_zoom = default_zoom
         self.map_copyright = map_copyright
+    
+    @property
+    def current_zoom(self):
+        return self.__current_zoom
+
+    @current_zoom.setter
+    def current_zoom(self, new_zoom):
+        new_zoom = min(new_zoom, self.max_zoom)
+        new_zoom = max(new_zoom, self.min_zoom)
+        self.__current_zoom = int(new_zoom)
+    
+    def zoom_in(self):
+        self.current_zoom += 1
         
+    def zoom_out(self):
+        self.current_zoom -= 1
+    
     def make_url(self, x, y, zoom):
         url = self.url_template.replace("{x}", str(x) )
         url =               url.replace("{y}", str(y) )
