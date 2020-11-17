@@ -6,13 +6,14 @@ This file contains the Tile class.
 import numpy as np
 
 class RasterTile(object):
-    def __init__(self, zoom, map_copyright,
-                       raster_image   = np.array([[[0,0,0]]]),
-                       angular_extent = {"north_lat": 1E-9, 
-                                         "south_lat": 0, 
-                                         "east_lon":  0,
-                                         "west_lon":  1E-9
-                                         }
+    def __init__(self, 
+                 zoom,
+                 raster_image   = np.array([[[0,0,0]]]),
+                 angular_extent = {"north_lat": 1E-9, 
+                                   "south_lat": 0, 
+                                   "east_lon":  0,
+                                   "west_lon":  1E-9
+                                  }
                  ):
         """
         @brief Data container for a raster tile.
@@ -24,7 +25,6 @@ class RasterTile(object):
                             latitude and longitude in deg.
         """
         self.zoom          = zoom
-        self.map_copyright = map_copyright
         self.raster_image  = raster_image
         self.north_lat     = angular_extent["north_lat"]
         self.south_lat     = angular_extent["south_lat"]
@@ -131,10 +131,9 @@ class RasterTile(object):
         north_lat, west_lon = self.pxpos_to_angles(iy=i_top,    ix=i_left )
         south_lat, east_lon = self.pxpos_to_angles(iy=i_bottom, ix=i_right)
         
-        cropped_tile = RasterTile(map_copyright  = self.map_copyright,
-                                  zoom           = self.zoom, 
-                                  raster_image   = cropped_im,
-                                  angular_extent = {"north_lat": north_lat, "south_lat": south_lat, "east_lon":  east_lon, "west_lon":  west_lon },
+        cropped_tile = RasterTile( zoom           = self.zoom, 
+                                   raster_image   = cropped_im,
+                                   angular_extent = {"north_lat": north_lat, "south_lat": south_lat, "east_lon":  east_lon, "west_lon":  west_lon },
                                  )
         return cropped_tile
 

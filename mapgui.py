@@ -173,8 +173,7 @@ class MapWindow(Gtk.Window):
 
     def on_search_result_clicked(self, button):
         
-        self.make_nav_buttons( layer = self.interactive_layer )
-        
+        self.make_nav_buttons( layer = self.interactive_layer )        
         self.entry.set_text(button.result["display_name"])
         
         self.marker_layer.make_marker_list( destination = button.result, map_copyright= self.map.map_copyright)
@@ -205,7 +204,6 @@ class MapWindow(Gtk.Window):
         return repeat
     
     def on_zoom_in_button_clicked(self, button):
-        print("zoom in clicked")
         self.map.zoom_in()
 
     def on_zoom_out_button_clicked(self, button):
