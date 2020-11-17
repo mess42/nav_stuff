@@ -29,7 +29,7 @@
                 "url_template": "",
                 "map_copyright": "Debug Map. Please choose another map profile. Normally, the map data copyright text would appear here.",
                 "min_zoom": 5,
-                "max_zoom": 42,
+                "max_zoom": 19,
                 "default_zoom":17
                 }
         }

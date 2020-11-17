@@ -42,7 +42,6 @@ class SlippyMap(object):
         new_zoom = min(new_zoom, self.max_zoom)
         new_zoom = max(new_zoom, self.min_zoom)
         self.__current_zoom = int(new_zoom)
-        print("zoom changed to", self.current_zoom)
     
     def zoom_in(self):
         self.current_zoom += 1

@@ -70,7 +70,8 @@ class MapWindow(Gtk.Window):
         # Clickable objects must be on the top layer,
         # so widgets of this layer are exchanged based on context.
         self.interactive_layer = Gtk.Grid()
-        self.canvas.add_overlay(self.interactive_layer)
+        self.canvas.add_overlay( self.interactive_layer )
+        self.make_nav_buttons( layer = self.interactive_layer )
 
         self.add(self.widgets)
         self.show_all()
@@ -130,8 +131,23 @@ class MapWindow(Gtk.Window):
         for child in parent.get_children():
             parent.remove(child)
 
+    def make_nav_buttons(self, layer):
+        
+        self.remove_all_children( layer )
+
+        zoom_in_button = Gtk.Button.new_with_label("+")
+        zoom_in_button.connect("clicked", self.on_zoom_in_button_clicked)
+        layer.attach( child=zoom_in_button, left=0, top=0, width=1, height=1)
+
+        zoom_out_button = Gtk.Button.new_with_label("-")
+        zoom_out_button.connect("clicked", self.on_zoom_out_button_clicked)
+        layer.attach( child=zoom_out_button, left=0, top=1, width=1, height=1)
+        
+        layer.show_all()
+
+
     def make_search_result_buttons(self, layer, list_of_result_dicts):
-        # remove zoom controls or search results from previus search
+        # remove zoom controls or results from previus search
         self.remove_all_children( layer )
         
         # make a Button for each result
@@ -157,13 +173,11 @@ class MapWindow(Gtk.Window):
 
     def on_search_result_clicked(self, button):
         
-        for child in self.interactive_layer.get_children():
-            self.interactive_layer.remove(child)
+        self.make_nav_buttons( layer = self.interactive_layer )
         
         self.entry.set_text(button.result["display_name"])
         
-        self.marker_layer.make_marker_list( destination = button.result, 
-                                           map_copyright= self.map.map_copyright)
+        self.marker_layer.make_marker_list( destination = button.result, map_copyright= self.map.map_copyright)
 
                   
     def on_timeout(self, data):
