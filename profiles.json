@@ -5,7 +5,10 @@
             "parameters": 
                 {
                 "url_template": "https://tile.opentopomap.org/{z}/{x}/{y}.png",
-                "map_copyright": "Map Data: (c) OpenStreetMap-Contributors SRTM | Map Layout: (c) OpenTopoMap CC-BY-SA"
+                "map_copyright": "Map Data: (c) OpenStreetMap-Contributors SRTM | Map Layout: (c) OpenTopoMap CC-BY-SA",
+                "min_zoom": 5,
+                "max_zoom": 17,
+                "default_zoom":17
                 }
         }, 
         "OSM Scout": {
@@ -13,7 +16,10 @@
             "parameters": 
                 {
                 "url_template": "http://localhost:8553/v1/tile?daylight=1&scale=1&z={z}&x={x}&y={y}",
-                "map_copyright": "Map Layout: OSM Scout Server (c) Rinigus GPL3 | Map data: See OSM Scout Server for further information."
+                "map_copyright": "Map Layout: OSM Scout Server (c) Rinigus GPL3 | Map data: See OSM Scout Server for further information.",
+                "min_zoom": 5,
+                "max_zoom": 42,
+                "default_zoom":17
                 }
         }, 
         "Debug Map": {
@@ -21,7 +27,10 @@
             "parameters": 
                 {
                 "url_template": "",
-                "map_copyright": "Debug Map. Please choose another map profile. Normally, the map data copyright text would appear here."
+                "map_copyright": "Debug Map. Please choose another map profile. Normally, the map data copyright text would appear here.",
+                "min_zoom": 5,
+                "max_zoom": 42,
+                "default_zoom":17
                 }
         }
     },

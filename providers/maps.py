@@ -24,10 +24,13 @@ def get_mapping_of_names_to_classes():
     
 
 class SlippyMap(object):
-    def __init__(self, url_template, map_copyright):
+    def __init__(self, url_template, min_zoom, max_zoom, default_zoom, map_copyright):
         self.cached_slippy_tiles = {}
         self.large_tile = tile.RasterTile(zoom=0, map_copyright=map_copyright)
         self.url_template = url_template
+        self.min_zoom = min_zoom
+        self.max_zoom = max_zoom
+        self.current_zoom = default_zoom
         self.map_copyright = map_copyright
         
     def make_url(self, x, y, zoom):
@@ -99,7 +102,6 @@ class SlippyMap(object):
         
         @return im (3d numpy array of int)
         """
-        zoom = 17
         
         # Can the large tile be cropped ?
         cropping_indices_would_be_sane = self.large_tile.check_sanity_of_cropping_angles(
@@ -109,13 +111,13 @@ class SlippyMap(object):
                                                  cropped_ysize_px = ysize_px,
                                                  )
 
-        large_tile_can_be_used = ( zoom == self.large_tile.zoom and cropping_indices_would_be_sane )
+        large_tile_can_be_used = ( self.current_zoom == self.large_tile.zoom and cropping_indices_would_be_sane )
 
         # if large tile is unsuitable, make a new one
         if not large_tile_can_be_used:
             self.large_tile = self.get_large_tile( lat_deg  = center_lat_deg, 
                                                    lon_deg  = center_lon_deg, 
-                                                   zoom     = zoom, 
+                                                   zoom     = self.current_zoom, 
                                                    xsize_px = 1.4 * xsize_px, 
                                                    ysize_px = 1.4 * ysize_px 
                                                   )
