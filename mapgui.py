@@ -111,24 +111,9 @@ class MapWindow(Gtk.Window):
 
         # make a Button for each result
         for res in list_of_result_dicts:           
-            airline = calc.angles.calc_properties_of_airline(lat1_deg = self.position.latitude,
-                                                             lon1_deg = self.position.longitude,
-                                                             lat2_deg = float(res["lat"]),
-                                                             lon2_deg = float(res["lon"]),
-                                                             )
-            rounded_distance_km = airline["distance_m"]
-            if airline["distance_m"] < 10000:
-                rounded_distance_km = str(np.round(airline["distance_m"]/1000,1))
-            elif airline["distance_m"] < 100000:
-                rounded_distance_km = str(int(np.round(airline["distance_m"]/1000)))
-            elif airline["distance_m"] < 1000000:
-                rounded_distance_km = str(int(np.round(airline["distance_m"]/1000,-1)))
-            else:
-                rounded_distance_km = str(int(np.round(airline["distance_m"]/1000,-2)))
-                
-            nesw                = calc.angles.azimuth_to_nesw_string(azim_deg = airline["azimuth_from_point_1_towards_2_deg"])
+            res = self.enrich_result(res)
             
-            label = str(res["display_name"]) + "\n" + rounded_distance_km + " km " + nesw
+            label = str(res["display_name"]) + "\n" + str(res["rounded_distance_km"]) + " km " + res["nesw"]
             button = widgets.result_button.ResultButton( label = label, result = res )
             button.connect("clicked", self.on_search_result_clicked)
             self.result_layer.add(button)
@@ -177,7 +162,27 @@ class MapWindow(Gtk.Window):
         print("Position provider disconnected.")
         #TODO: write (possibly modified) config back to hard drive
         Gtk.main_quit(object_to_destroy)
+    
+    def enrich_result(self,res):
+        airline = calc.angles.calc_properties_of_airline(lat1_deg = self.position.latitude,
+                                                         lon1_deg = self.position.longitude,
+                                                         lat2_deg = float(res["lat"]),
+                                                         lon2_deg = float(res["lon"]),
+                                                         )
+        res["rounded_distance_km"] = airline["distance_m"] / 1000
+        if airline["distance_m"] < 10000:
+            res["rounded_distance_km"] = np.round( res["rounded_distance_km"], 1)
+        elif airline["distance_m"] < 100000:
+            res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"] ))
+        elif airline["distance_m"] < 1000000:
+            res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"], -1))
+        else:
+            res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"], -2))
         
+        res["azimuth_deg"] = airline["azimuth_from_point_1_towards_2_deg"]
+        res["nesw"]        = calc.angles.azimuth_to_nesw_string(azim_deg = airline["azimuth_from_point_1_towards_2_deg"])
+
+        return res
         
 if __name__ == "__main__":
     win = MapWindow()
