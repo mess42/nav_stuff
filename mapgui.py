@@ -61,13 +61,16 @@ class MapWindow(Gtk.Window):
 
         # Create Map (background layer) 
         # and Markers (Overlay on map)
-        # and Search results (Overlay on markers)
         self.map_layer = widgets.map_layer.MapLayerWidget()
         self.canvas.add(self.map_layer)
         self.marker_layer = widgets.marker_layer.MarkerLayerWidget(map_copyright = self.map.map_copyright)
         self.canvas.add_overlay(self.marker_layer)
-        self.result_layer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.canvas.add_overlay(self.result_layer)
+
+        # Top layer is the interactive layer.
+        # Clickable objects must be on the top layer,
+        # so widgets of this layer are exchanged based on context.
+        self.interactive_layer = Gtk.Grid()
+        self.canvas.add_overlay(self.interactive_layer)
 
         self.add(self.widgets)
         self.show_all()
@@ -100,35 +103,68 @@ class MapWindow(Gtk.Window):
         provider            = ProviderClass(**params)
         return provider
 
-    def on_search_activated(self, entry):
-        
-        # remove search results from previus search
-        for child in self.result_layer.get_children():
-            self.result_layer.remove(child)
-        
-        # request results from the search provider
-        list_of_result_dicts = self.search.find( entry.get_text() )
-
-        # make a Button for each result
-        for res in list_of_result_dicts:           
-            res = self.enrich_result(res)
+    def enrich_results_with_data_rel_to_ego_pos(self,list_of_result_dicts):
+        for res in list_of_result_dicts:
+            airline = calc.angles.calc_properties_of_airline(
+                         lat1_deg = self.position.latitude,
+                         lon1_deg = self.position.longitude,
+                         lat2_deg = float(res["lat"]),
+                         lon2_deg = float(res["lon"])
+                         )
+            res["rounded_distance_km"] = airline["distance_m"] / 1000
+            if airline["distance_m"] < 10000:
+                res["rounded_distance_km"] = np.round( res["rounded_distance_km"], 1)
+            elif airline["distance_m"] < 100000:
+                res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"] ))
+            elif airline["distance_m"] < 1000000:
+                res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"], -1))
+            else:
+                res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"], -2))
             
+            res["azimuth_deg"] = airline["azimuth_from_point_1_towards_2_deg"]
+            res["nesw"]        = calc.angles.azimuth_to_nesw_string(azim_deg = airline["azimuth_from_point_1_towards_2_deg"])
+
+        return list_of_result_dicts
+
+    def remove_all_children(self, parent):
+        for child in parent.get_children():
+            parent.remove(child)
+
+    def make_search_result_buttons(self, layer, list_of_result_dicts):
+        # remove zoom controls or search results from previus search
+        self.remove_all_children( layer )
+        
+        # make a Button for each result
+        for i in range(len(list_of_result_dicts)):
+            res = list_of_result_dicts[i]
             label = str(res["display_name"]) + "\n" + str(res["rounded_distance_km"]) + " km " + res["nesw"]
             button = widgets.result_button.ResultButton( label = label, result = res )
             button.connect("clicked", self.on_search_result_clicked)
-            self.result_layer.add(button)
+            layer.attach( child=button, left=0, top=i, width=1, height=1)
 
-        self.result_layer.show_all()
+        layer.show_all()
+
+
+    def on_search_activated(self, entry):
+                
+        # request results from the search provider
+        list_of_result_dicts = self.search.find( entry.get_text() )
+        list_of_result_dicts = self.enrich_results_with_data_rel_to_ego_pos(list_of_result_dicts)
+        
+        # make a Button for each result
+        self.make_search_result_buttons(layer = self.interactive_layer, list_of_result_dicts=list_of_result_dicts)
+
 
     def on_search_result_clicked(self, button):
         
-        for child in self.result_layer.get_children():
-            self.result_layer.remove(child)
+        for child in self.interactive_layer.get_children():
+            self.interactive_layer.remove(child)
         
         self.entry.set_text(button.result["display_name"])
         
         self.marker_layer.make_marker_list( destination = button.result, 
                                            map_copyright= self.map.map_copyright)
+
                   
     def on_timeout(self, data):
         self.position.update_position()
@@ -154,6 +190,13 @@ class MapWindow(Gtk.Window):
         repeat = True
         return repeat
     
+    def on_zoom_in_button_clicked(self, button):
+        print("zoom in clicked")
+        self.map.zoom_in()
+
+    def on_zoom_out_button_clicked(self, button):
+        self.map.zoom_out()
+    
     def on_destroy(self, object_to_destroy):
         """
         Actions to be performed before destroying this application.
@@ -163,26 +206,6 @@ class MapWindow(Gtk.Window):
         #TODO: write (possibly modified) config back to hard drive
         Gtk.main_quit(object_to_destroy)
     
-    def enrich_result(self,res):
-        airline = calc.angles.calc_properties_of_airline(lat1_deg = self.position.latitude,
-                                                         lon1_deg = self.position.longitude,
-                                                         lat2_deg = float(res["lat"]),
-                                                         lon2_deg = float(res["lon"]),
-                                                         )
-        res["rounded_distance_km"] = airline["distance_m"] / 1000
-        if airline["distance_m"] < 10000:
-            res["rounded_distance_km"] = np.round( res["rounded_distance_km"], 1)
-        elif airline["distance_m"] < 100000:
-            res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"] ))
-        elif airline["distance_m"] < 1000000:
-            res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"], -1))
-        else:
-            res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"], -2))
-        
-        res["azimuth_deg"] = airline["azimuth_from_point_1_towards_2_deg"]
-        res["nesw"]        = calc.angles.azimuth_to_nesw_string(azim_deg = airline["azimuth_from_point_1_towards_2_deg"])
-
-        return res
         
 if __name__ == "__main__":
     win = MapWindow()
