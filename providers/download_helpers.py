@@ -68,6 +68,6 @@ def remote_json_to_py(url):
     @return p (list or dict)
     """
     json_request = requests.get(url)
-    p = json.JSONDecoder.decode( json_request.content )
+    p = json.JSONDecoder().decode( s = json_request.content.decode("utf-8") )
     return p
     
