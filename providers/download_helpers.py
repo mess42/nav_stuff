@@ -62,13 +62,12 @@ def remote_png_to_numpy(url):
 
 def remote_json_to_py(url):
     """
-    @brief: Downlad a JSON file to RAM and convert it to a python type.
+    @brief: Downlad a JSON file to RAM and convert it to a python data type.
     
     @param  url (str) Remote file location
     @return p (list or dict)
     """
     json_request = requests.get(url)
-    filehandle  = FakeFileHandle( content = json_request.content )
-    p = json.load(filehandle)
+    p = json.JSONDecoder.decode( json_request.content )
     return p
     
