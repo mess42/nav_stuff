@@ -37,7 +37,7 @@ class MapWindow(Gtk.Window):
                 
         # Create widgets and auto-update them
         self.create_widgets()
-        self.timeout_id = GLib.timeout_add(update_delay_in_ms, self.on_timeout, None)
+        GLib.timeout_add(update_delay_in_ms, self.on_timeout, None)
 
 
     def create_widgets(self):
@@ -145,18 +145,35 @@ class MapWindow(Gtk.Window):
         
         layer.show_all()
 
+    def from_no_result_to_nav_buttons(self, button):
+        
+        self.make_nav_buttons(layer = self.interactive_layer )
+        
+        repeat = False
+        return repeat
 
     def make_search_result_buttons(self, layer, list_of_result_dicts):
         # remove zoom controls or results from previus search
         self.remove_all_children( layer )
         
-        # make a Button for each result
-        for i in range(len(list_of_result_dicts)):
-            res = list_of_result_dicts[i]
-            label = str(res["display_name"]) + "\n" + str(res["rounded_distance_km"]) + " km " + res["nesw"]
-            button = widgets.result_button.ResultButton( label = label, result = res )
-            button.connect("clicked", self.on_search_result_clicked)
-            layer.attach( child=button, left=0, top=i, width=1, height=1)
+        if len(list_of_result_dicts) == 0:
+            print("oh no! nothing found")
+            button = Gtk.Button.new_with_label("no results found.")
+            button.connect("clicked", self.from_no_result_to_nav_buttons)
+            layer.attach( child=button, left=0, top=0, width=1, height=1)
+            
+            # show "no result" only for a short time and auto-return to nav buttons
+            GLib.timeout_add( 3000, self.from_no_result_to_nav_buttons, None)
+
+            
+        else:  
+            # make a Button for each result
+            for i in range(len(list_of_result_dicts)):
+                res = list_of_result_dicts[i]
+                label = str(res["display_name"]) + "\n" + str(res["rounded_distance_km"]) + " km " + res["nesw"]
+                button = widgets.result_button.ResultButton( label = label, result = res )
+                button.connect("clicked", self.on_search_result_clicked)
+                layer.attach( child=button, left=0, top=i, width=1, height=1)
 
         layer.show_all()
 
@@ -167,7 +184,7 @@ class MapWindow(Gtk.Window):
         list_of_result_dicts = self.search.find( entry.get_text() )
         list_of_result_dicts = self.enrich_results_with_data_rel_to_ego_pos(list_of_result_dicts)
         
-        # make a Button for each result
+        # make a Button for each result  
         self.make_search_result_buttons(layer = self.interactive_layer, list_of_result_dicts=list_of_result_dicts)
 
 
