@@ -99,16 +99,18 @@ class MapWindow(Gtk.Window):
         @return provider (object)
         """
         if profile_type not in profiles:
-            raise Exception("Profile type " + str(profile_type) + " not found.")
+            e = "Profile type \'" + str(profile_type) + "\' not found. "
+            e += "Choose one of " + str( list(profiles.keys() ))
+            raise Exception(e)
         if profile_name not in profiles[profile_type]:
-            e  = "Profile name " + str(profile_name)
-            e += " in type " + str(profile_type) + " not found."
-            e += " Choose one of" + str( list(profiles[profile_type].keys() ))
+            e  = "Profile name \'" + str(profile_name) + "\' "
+            e += "in type \'" + str(profile_type) + "\' not found. "
+            e += "Choose one of " + str( list(profiles[profile_type].keys() ))
             raise Exception(e)
         if "class_name" not in profiles[profile_type][profile_name]:
-            raise Exception("Class name not found in profile " + str(profile_type) + " / " + str(profile_name) )
+            raise Exception("class_name not found in profile " + str(profile_type) + " / " + str(profile_name) )
         if "parameters" not in profiles[profile_type][profile_name]:
-            raise Exception("Parameters not found in profile " + str(profile_type) + " / " + str(profile_name) )
+            raise Exception("parameters not found in profile " + str(profile_type) + " / " + str(profile_name) )
 
         provider_class_name = profiles[profile_type][profile_name]["class_name"]
         params              = profiles[profile_type][profile_name]["parameters"]
