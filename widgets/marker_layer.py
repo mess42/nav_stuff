@@ -32,9 +32,10 @@ class MarkerLayerWidget(Gtk.DrawingArea):
         if destination is not None:
             m += [markers.FixedLatLonMarkerWithAlternativeOffTilePointer(
                                         draftsman = markers.Pin(fill_color=(0.8,0,0)),
-                                        off_tile_draftsman= markers.Arrow(fill_color=(0.8,0,0)), 
+                                        off_tile_draftsman= markers.ArrowWithDistanceLabel( distance_label = "The destination is off-tile", fill_color=(0.8,0,0)), 
                                         lat_deg = float(destination["lat"]),
-                                        lon_deg= float(destination["lon"]))]
+                                        lon_deg = float(destination["lon"]),
+                                        )]
             
         # Ego marker
         m += [markers.FollowingMarker(draftsman = markers.Pin(fill_color=(0,1,0)))]

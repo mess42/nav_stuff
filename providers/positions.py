@@ -30,11 +30,11 @@ class PositionProvider(object):
         """
         Baseclass to connect to position provider services.
         """
-        self.latitude  = float("nan") # degree, positive is North
-        self.longitude = float("nan") # degree, positive is East
-        self.time      = 0            # unix timestamp of last sensor update
-        self.velocity  = 0            # in m/s
-        self.heading   = 0            # heading of velocity in degree
+        self.latitude  = 0 # degree, positive is North
+        self.longitude = 0 # degree, positive is East
+        self.time      = 0 # unix timestamp of last sensor update
+        self.velocity  = 0 # in m/s
+        self.heading   = 0 # heading of velocity in degree
         self.is_connected = False
         
         self.connect( **params )

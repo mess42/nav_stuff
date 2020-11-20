@@ -74,32 +74,47 @@ class FixedLatLonMarkerWithAlternativeOffTilePointer(Marker):
         self.border = 10 # how close to the boder is "off" ?
 
     def update(self,cropped_tile, position):
-        self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = self.lat_deg, lon_deg = self.lon_deg)
+        y,x = cropped_tile.angles_to_pxpos(lat_deg = self.lat_deg, lon_deg = self.lon_deg)
+        
+        self.x = x
+        self.y = y
+        
+        # Heading is from the screen center to the pin position
+        # This should stay like that: If this was the distance to the ego position, and both marker and ego position are off-tile, this would result in a strange looking arrow
         self.heading = np.arctan2( self.x - cropped_tile.xsize_px//2, cropped_tile.ysize_px//2 - self.y )
 
         self.draftsman = self.on_tile_draftsman
         
         if (self.x < self.border):
             self.draftsman = self.off_tile_draftsman
-            self.x = self.border
-            self.y = cropped_tile.ysize_px//2 - ( self.x - cropped_tile.xsize_px//2 ) / np.tan(self.heading)
+            self.x      = self.border
+            self.y      = cropped_tile.ysize_px//2 - ( self.x - cropped_tile.xsize_px//2 ) / np.tan(self.heading)
         elif (self.x > cropped_tile.xsize_px - self.border):
             self.draftsman = self.off_tile_draftsman
-            self.x = cropped_tile.xsize_px - self.border
-            self.y = cropped_tile.ysize_px//2 - ( self.x - cropped_tile.xsize_px//2 ) / np.tan(self.heading)
+            self.x      = cropped_tile.xsize_px - self.border
+            self.y      = cropped_tile.ysize_px//2 - ( self.x - cropped_tile.xsize_px//2 ) / np.tan(self.heading)
 
         if (self.y < self.border):
             self.draftsman = self.off_tile_draftsman
-            self.y = self.border
-            self.x = cropped_tile.xsize_px//2 + (cropped_tile.ysize_px//2 - self.y ) * np.tan(self.heading)
+            self.y      = self.border
+            self.x      = cropped_tile.xsize_px//2 + (cropped_tile.ysize_px//2 - self.y ) * np.tan(self.heading)
         elif (self.y > cropped_tile.ysize_px - self.border):
             self.draftsman = self.off_tile_draftsman
-            self.y = cropped_tile.ysize_px - self.border
-            self.x = cropped_tile.xsize_px//2 + (cropped_tile.ysize_px//2 - self.y ) * np.tan(self.heading)
+            self.y      = cropped_tile.ysize_px - self.border
+            self.x      = cropped_tile.xsize_px//2 + (cropped_tile.ysize_px//2 - self.y ) * np.tan(self.heading)
 
+        if hasattr(self.draftsman, "distance_label"):
+            # Distance from arrow tip to target:
+            # zero for on_tile_draftsman
+            # distance from screen border to target for off_tile_drasftaman
+            distance_px = np.sqrt((x-self.x)**2+(y-self.y)**2)
+            distance_m = distance_px * cropped_tile.get_scale_in_m_per_px()
+            self.draftsman.distance_label = str( round(distance_m/1000,1) ) + " km"
             
-
-        
+            
+            
+            
+                  
 class FollowingMarker(Marker):
     """
     @brief: Marker that follows the ego position.
@@ -107,6 +122,7 @@ class FollowingMarker(Marker):
     def update( self, cropped_tile, position):
         self.y, self.x = cropped_tile.angles_to_pxpos(lat_deg = position.latitude, lon_deg = position.longitude )
         self.heading = position.heading
+
 
 class MetricScaleBarMarker(FixedXYMarker):
     def __init__(self, draftsman, xy_rel_to_window_size = [0,0], xy_abs_offset = [0,0], desired_size_px=50):
@@ -265,11 +281,80 @@ class Arrow(Draftsman):
         
 
 class Text(Draftsman):
-    def __init__(self, text, color=(0,0,0)):
+    def __init__(self, label, fontsize=10, color=(0,0,0)):
         self.color = color
-        self.text  = text
+        self.label  = label
+        self.width = 0
+        self.height = 0
+        self.fontsize = fontsize
         
     def draw(self, ctx, x, y, heading_rad):
+        ctx.set_font_size (self.fontsize)
+        text_extents = ctx.text_extents( self.label )
+        self.width = text_extents.width
+        self.height = text_extents.height
+        
         ctx.set_source_rgb(*self.color)
         ctx.move_to( x, y )
-        ctx.show_text( self.text )
+        ctx.show_text( self.label )
+
+
+class ArrowWithDistanceLabel(Draftsman):
+    def __init__(self, width=20, 
+                 length = 40,
+                 center = 0,
+                 fill_color=(1,0,0), 
+                 border_color=(0,0,0),
+                 distance_label = ""
+                 ):
+        self.arrow          = Arrow( width=width, length = length, center = center, fill_color=fill_color, border_color=border_color )
+        self.text           = Text( label = distance_label, fontsize = .5*length, color=fill_color)
+        self.arrow_length   = max(  np.sqrt( self.arrow.dx**2 + self.arrow.dy**2 )  )
+        self.distance_label = distance_label
+          
+    def draw(self, ctx, x, y, heading_rad):
+        self.arrow.draw(ctx, x, y, heading_rad)
+                
+        beta = 30
+        heading_deg_plus_beta = (heading_rad * 180/np.pi + beta) % 360
+
+        if   heading_deg_plus_beta > 0            and heading_deg_plus_beta <= 2*beta:
+            #north
+            dx = -self.text.width * heading_deg_plus_beta / (2*beta)
+            dy =  self.text.height
+        elif heading_deg_plus_beta > 2*beta       and heading_deg_plus_beta <= 90:
+            # north_east
+            dx = -self.text.width
+            dy =  self.text.height
+        elif heading_deg_plus_beta > 90           and heading_deg_plus_beta <= 90 + 2*beta:
+            # east
+            dx = -self.text.width
+            dy =  self.text.height * (1-(heading_deg_plus_beta - 90)/(2*beta))
+        elif heading_deg_plus_beta > 90 + 2*beta  and heading_deg_plus_beta <= 180:
+            # south east
+            dx = -self.text.width
+            dy =  0
+        elif heading_deg_plus_beta > 180          and heading_deg_plus_beta <= 180 + 2*beta:
+            # south
+            dx =  self.text.width * ((heading_deg_plus_beta - 180)/(2*beta)-1)
+            dy =  0
+        elif heading_deg_plus_beta > 180 + 2*beta and heading_deg_plus_beta <= 270:
+            # south west
+            dx =  0
+            dy =  0
+        elif heading_deg_plus_beta > 270          and heading_deg_plus_beta <= 270 + 2*beta:
+            # west
+            dx =  0
+            dy = self.text.height * (heading_deg_plus_beta-270)/(2*beta)
+        else:
+            # north_west
+            dx = 0
+            dy = self.text.height
+       
+        xtext = x + dx - np.sin(heading_rad) * (self.arrow_length + 5)
+        ytext = y + dy + np.cos(heading_rad) * (self.arrow_length + 5)
+
+        self.text.label = self.distance_label
+        self.text.draw(ctx, xtext, ytext, heading_rad)
+        
+        
