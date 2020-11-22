@@ -85,13 +85,13 @@ class MapWindow(Gtk.Window):
         return dic
 
 
-    def make_provider_object(self, profile_type, profile_name, profiles, provider_dict ):
+    def make_provider_object(self, profile_type, config, profiles, provider_dict ):
         """
         @brief: make a map, position, or routing provider object.
         
         @param: profile_type (str)
                 Map or position or router
-        @param: profile_name (str)
+        @param: config (dict)
         @param: profiles (dict)
                 Must contain the entry profiles[profile_type][profile_name].
                 The entry is a dict with keys class_name and parameters.
@@ -100,10 +100,20 @@ class MapWindow(Gtk.Window):
         
         @return provider (object)
         """
+        
+        # The profile and config.json can be edited by hand,
+        # so let's do a sanity check
         if profile_type not in profiles:
-            e = "Profile type \'" + str(profile_type) + "\' not found. "
+            e = "Profile type \'" + str(profile_type) + "\' not found in profiles json. "
             e += "Choose one of " + str( list(profiles.keys() ))
             raise Exception(e)
+        if profile_type not in config:
+            e = "Profile type \'" + str(profile_type) + "\' not found in config json. "
+            e += "Choose one of " + str( list(config.keys() ))
+            raise Exception(e)
+            
+        profile_name = config[profile_type]
+        
         if profile_name not in profiles[profile_type]:
             e  = "Profile name \'" + str(profile_name) + "\' "
             e += "in type \'" + str(profile_type) + "\' not found. "

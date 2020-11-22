@@ -85,7 +85,6 @@ class OSRM(Router):
         if d["code"].upper() != "OK":
             raise Exception(d["code"])
         
-        print( "keys=", d.keys() )
         self.trip = d["trips"][0]
 
     def get_polyline_of_whole_trip(self):
