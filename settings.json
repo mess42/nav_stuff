@@ -1,6 +1,1 @@
-{
-    "map": "Debug Map",
-    "position": "Position Simulation",
-    "search": "Nominatim",
-    "router": "OSRM"
-}
+{"map": "Debug Map", "position": "Position Simulation", "search": "Nominatim", "router": "OSRM"}

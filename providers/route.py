@@ -72,7 +72,7 @@ class Router(object):
         pass
 
     def get_polyline_of_whole_trip(self):
-        return {"lats_deg":[], "lons_deg":[]}
+        return {"lat_deg":[], "lon_deg":[]}
 
 
 class OSRM(Router):    
