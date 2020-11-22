@@ -19,8 +19,8 @@ import calc.angles
 
 class MapWindow(Gtk.Window):
     def __init__(self, 
-        profiles_filename  = "profiles.json", 
-        config_filename    = "config.json", 
+        profiles_filename  = "profile_definitions.json", 
+        settings_filename    = "settings.json", 
         update_delay_in_ms = 50
         ):
 
@@ -29,13 +29,13 @@ class MapWindow(Gtk.Window):
         
         # Load Configuration files
         profiles = self.json2dict(profiles_filename)
-        config   = self.json2dict(config_filename)
+        settings   = self.json2dict(settings_filename)
 
         # Create Map and Position provider
-        self.map      = self.make_provider_object( profile_type = "Map Provider",      config = config, profiles = profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
-        self.position = self.make_provider_object( profile_type = "Position Provider", config = config, profiles = profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
-        self.search   = self.make_provider_object( profile_type = "Search Provider",   config = config, profiles = profiles, provider_dict = providers.search.get_mapping_of_names_to_classes() )
-        self.router   = self.make_provider_object( profile_type = "Routing Provider",  config = config, profiles = profiles, provider_dict = providers.route.get_mapping_of_names_to_classes() )
+        self.map      = self.make_provider_object( profile_type = "Map Provider",      settings = settings, profiles = profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
+        self.position = self.make_provider_object( profile_type = "Position Provider", settings = settings, profiles = profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
+        self.search   = self.make_provider_object( profile_type = "Search Provider",   settings = settings, profiles = profiles, provider_dict = providers.search.get_mapping_of_names_to_classes() )
+        self.router   = self.make_provider_object( profile_type = "Routing Provider",  settings = settings, profiles = profiles, provider_dict = providers.route.get_mapping_of_names_to_classes() )
         
         # Create widgets and auto-update them
         self.create_widgets()
@@ -85,13 +85,13 @@ class MapWindow(Gtk.Window):
         return dic
 
 
-    def make_provider_object(self, profile_type, config, profiles, provider_dict ):
+    def make_provider_object(self, profile_type, settings, profiles, provider_dict ):
         """
         @brief: make a map, position, or routing provider object.
         
         @param: profile_type (str)
                 Map or position or router
-        @param: config (dict)
+        @param: settings (dict)
         @param: profiles (dict)
                 Must contain the entry profiles[profile_type][profile_name].
                 The entry is a dict with keys class_name and parameters.
@@ -101,18 +101,18 @@ class MapWindow(Gtk.Window):
         @return provider (object)
         """
         
-        # The profile and config.json can be edited by hand,
+        # The profile and settings.json can be edited by hand,
         # so let's do a sanity check
         if profile_type not in profiles:
             e = "Profile type \'" + str(profile_type) + "\' not found in profiles json. "
             e += "Choose one of " + str( list(profiles.keys() ))
             raise Exception(e)
-        if profile_type not in config:
-            e = "Profile type \'" + str(profile_type) + "\' not found in config json. "
-            e += "Choose one of " + str( list(config.keys() ))
+        if profile_type not in settings:
+            e = "Profile type \'" + str(profile_type) + "\' not found in settings json. "
+            e += "Choose one of " + str( list(settings.keys() ))
             raise Exception(e)
             
-        profile_name = config[profile_type]
+        profile_name = settings[profile_type]
         
         if profile_name not in profiles[profile_type]:
             e  = "Profile name \'" + str(profile_name) + "\' "
@@ -264,7 +264,7 @@ class MapWindow(Gtk.Window):
         """
         self.position.disconnect()
         print("Position provider disconnected.")
-        #TODO: write (possibly modified) config back to hard drive
+        #TODO: write (possibly modified) settings back to hard drive
         Gtk.main_quit(object_to_destroy)
     
         
