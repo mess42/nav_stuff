@@ -28,14 +28,15 @@ class MapWindow(Gtk.Window):
         self.connect("destroy", self.on_destroy)
         
         # Load Configuration files
-        profiles = self.json2dict(profiles_filename)
-        settings   = self.json2dict(settings_filename)
+        self.profiles = self.json2dict(profiles_filename)
+        self.settings   = self.json2dict(settings_filename)
+        self.settings_have_changed = False
 
         # Create Map and Position provider
-        self.map      = self.make_provider_object( profile_type = "Map Provider",      settings = settings, profiles = profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
-        self.position = self.make_provider_object( profile_type = "Position Provider", settings = settings, profiles = profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
-        self.search   = self.make_provider_object( profile_type = "Search Provider",   settings = settings, profiles = profiles, provider_dict = providers.search.get_mapping_of_names_to_classes() )
-        self.router   = self.make_provider_object( profile_type = "Routing Provider",  settings = settings, profiles = profiles, provider_dict = providers.route.get_mapping_of_names_to_classes() )
+        self.map      = self.make_provider_object( profile_type = "Map Provider",      settings = self.settings, profiles = self.profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
+        self.position = self.make_provider_object( profile_type = "Position Provider", settings = self.settings, profiles = self.profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
+        self.search   = self.make_provider_object( profile_type = "Search Provider",   settings = self.settings, profiles = self.profiles, provider_dict = providers.search.get_mapping_of_names_to_classes() )
+        self.router   = self.make_provider_object( profile_type = "Routing Provider",  settings = self.settings, profiles = self.profiles, provider_dict = providers.route.get_mapping_of_names_to_classes() )
         
         # Create widgets and auto-update them
         self.create_widgets()
@@ -157,6 +158,15 @@ class MapWindow(Gtk.Window):
         for child in parent.get_children():
             parent.remove(child)
 
+
+    def make_message_button(self, layer, label):
+
+        self.remove_all_children( layer )
+
+        msg_button = Gtk.Button.new_with_label(label)
+        layer.attach( child=msg_button, left=0, top=0, width=1, height=1)
+
+
     def make_nav_buttons(self, layer):
         
         self.remove_all_children( layer )
@@ -204,7 +214,9 @@ class MapWindow(Gtk.Window):
 
 
     def on_search_activated(self, entry):
-                
+        
+        self.make_message_button(layer = self.interactive_layer, label = "Waiting for search results ...")
+        
         # request results from the search provider
         list_of_result_dicts = self.search.find( entry.get_text() )
         list_of_result_dicts = self.enrich_results_with_data_rel_to_ego_pos(list_of_result_dicts)
@@ -215,9 +227,8 @@ class MapWindow(Gtk.Window):
 
     def on_search_result_clicked(self, button):
         
-        self.make_nav_buttons( layer = self.interactive_layer )        
-        self.entry.set_text(button.result["display_name"])
-        
+        self.make_message_button(layer = self.interactive_layer, label = "Waiting for route calculation ...")
+                
         self.router.set_trip(waypoints = np.array([ [self.position.longitude, self.position.latitude],[float(button.result["lon"]), float(button.result["lat"])] ]))
         polyline = self.router.get_polyline_of_whole_trip()
         polyline["color_rgba"] = (0,0,1,.5)
@@ -226,6 +237,9 @@ class MapWindow(Gtk.Window):
                                             map_copyright  = self.map.map_copyright,
                                             trip_polylines = [polyline],
                                           )
+
+        self.make_nav_buttons( layer = self.interactive_layer )        
+        self.entry.set_text(button.result["display_name"])
 
                   
     def on_timeout(self, data):
