@@ -14,7 +14,7 @@ import providers.search
 import providers.route
 import widgets.marker_layer
 import widgets.map_layer
-import widgets.result_button
+import widgets.buttons
 import calc.angles
 
 class MapWindow(Gtk.Window):
@@ -166,6 +166,8 @@ class MapWindow(Gtk.Window):
         msg_button = Gtk.Button.new_with_label(label)
         layer.attach( child=msg_button, left=0, top=0, width=1, height=1)
 
+        layer.show_all()
+
 
     def make_nav_buttons(self, layer):
         
@@ -173,13 +175,18 @@ class MapWindow(Gtk.Window):
 
         zoom_in_button = Gtk.Button.new_with_label("+")
         zoom_in_button.connect("clicked", self.on_zoom_in_button_clicked)
-        layer.attach( child=zoom_in_button, left=0, top=0, width=1, height=1)
+        layer.attach( child = zoom_in_button, left=0, top=0, width=1, height=1)
 
         zoom_out_button = Gtk.Button.new_with_label("-")
         zoom_out_button.connect("clicked", self.on_zoom_out_button_clicked)
-        layer.attach( child=zoom_out_button, left=0, top=1, width=1, height=1)
+        layer.attach( child = zoom_out_button, left=0, top=1, width=1, height=1)
+        
+        settings_button = Gtk.Button.new_with_label("Settings")
+        settings_button.connect("clicked", self.on_settings_button_clicked)
+        layer.attach( child = settings_button, left=0, top=2, width=1, height=1)
         
         layer.show_all()
+
 
     def from_no_result_to_nav_buttons(self, button):
         
@@ -187,6 +194,7 @@ class MapWindow(Gtk.Window):
         
         repeat = False
         return repeat
+
 
     def make_search_result_buttons(self, layer, list_of_result_dicts):
         # remove zoom controls or results from previus search
@@ -206,11 +214,56 @@ class MapWindow(Gtk.Window):
             for i in range(len(list_of_result_dicts)):
                 res = list_of_result_dicts[i]
                 label = str(res["display_name"]) + "\n" + str(res["rounded_distance_km"]) + " km " + res["nesw"] + " (air line)"
-                button = widgets.result_button.ResultButton( label = label, result = res )
+                button = widgets.buttons.ResultButton( label = label, result = res )
                 button.connect("clicked", self.on_search_result_clicked)
                 layer.attach( child=button, left=0, top=i, width=1, height=1)
 
         layer.show_all()
+
+
+    def make_settings_menu(self, layer):
+        self.remove_all_children( layer )
+ 
+        dropdown_menus = {}
+    
+        profile_types = list( self.profiles.keys() )
+        for i in np.arange(len(profile_types)):
+            
+            # Label
+            label = Gtk.Label()
+            label.set_text(profile_types[i])
+            layer.attach(child=label, left=0, top=i+1, width=1, height=1)
+            
+            # Dropdown menu
+            dropdown_options = list(  self.profiles[profile_types[i]].keys()  )
+            previously_chosen = self.settings[profile_types[i]]
+            prev_ind = dropdown_options.index(previously_chosen)
+            
+            dropdown_menu = Gtk.ComboBoxText()
+            dropdown_menu.set_entry_text_column(0)
+            #dropdown_menu.connect("changed", self.on_something_changed)
+            for opt in dropdown_options:
+                dropdown_menu.append_text(opt)
+            dropdown_menu.set_active( prev_ind )
+            layer.attach(child=dropdown_menu, left=1, top=i+1, width=1, height=1)
+
+            dropdown_menus[profile_types[i]] = dropdown_menu
+            
+        cancel_button = Gtk.Button.new_with_label("Cancel")
+        cancel_button.connect("clicked", self.on_settings_cancel_clicked)
+        layer.attach(child = cancel_button, left=0, top=0, width=1, height=1)
+        
+        #apply_button = 
+        print(dropdown_menus)
+
+        layer.show_all()
+
+    
+    def on_settings_button_clicked(self, button):
+        self.make_settings_menu( layer = self.interactive_layer )
+        
+    def on_settings_cancel_clicked(self, button):
+        self.make_nav_buttons( layer = self.interactive_layer )
 
 
     def on_search_activated(self, entry):
