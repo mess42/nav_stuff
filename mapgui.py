@@ -32,11 +32,11 @@ class MapWindow(Gtk.Window):
         self.settings   = self.json2dict(settings_filename)
         self.settings_have_changed = False
 
-        # Create Map and Position provider
-        self.map      = self.make_provider_object( profile_type = "Map Provider",      settings = self.settings, profiles = self.profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
-        self.position = self.make_provider_object( profile_type = "Position Provider", settings = self.settings, profiles = self.profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
-        self.search   = self.make_provider_object( profile_type = "Search Provider",   settings = self.settings, profiles = self.profiles, provider_dict = providers.search.get_mapping_of_names_to_classes() )
-        self.router   = self.make_provider_object( profile_type = "Routing Provider",  settings = self.settings, profiles = self.profiles, provider_dict = providers.route.get_mapping_of_names_to_classes() )
+        # providers for map, position, search, and routing
+        
+        self.providers = {}
+        for provider_type in self.profiles:
+            self.providers[provider_type] = self.make_provider_object( provider_type = provider_type, settings = self.settings, profiles = self.profiles, provider_dict = self.collect_available_provider_classes()[provider_type] )
         
         # Create widgets and auto-update them
         self.create_widgets()
@@ -53,7 +53,7 @@ class MapWindow(Gtk.Window):
         self.widgets = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         
         self.entry = Gtk.Entry()
-        self.entry.set_text("Hello World")
+        #self.entry.set_text("Hello World")
         self.entry.connect("activate", self.on_search_activated)
         self.widgets.add(self.entry)
         
@@ -66,7 +66,7 @@ class MapWindow(Gtk.Window):
         # and Markers (Overlay on map)
         self.map_layer = widgets.map_layer.MapLayerWidget()
         self.canvas.add(self.map_layer)
-        self.marker_layer = widgets.marker_layer.MarkerLayerWidget(map_copyright = self.map.map_copyright)
+        self.marker_layer = widgets.marker_layer.MarkerLayerWidget(map_copyright = self.providers["map"].map_copyright)
         self.canvas.add_overlay(self.marker_layer)
 
         # Top layer is the interactive layer.
@@ -86,15 +86,24 @@ class MapWindow(Gtk.Window):
         return dic
 
 
-    def make_provider_object(self, profile_type, settings, profiles, provider_dict ):
+    def collect_available_provider_classes(self):
+        p = { "map":      providers.maps.get_mapping_of_names_to_classes(),
+              "position": providers.positions.get_mapping_of_names_to_classes(),
+              "search":   providers.search.get_mapping_of_names_to_classes(), 
+              "router":   providers.route.get_mapping_of_names_to_classes() 
+            }
+        return p
+
+
+    def make_provider_object(self, provider_type, settings, profiles, provider_dict ):
         """
         @brief: make a map, position, or routing provider object.
         
-        @param: profile_type (str)
+        @param: provider_type (str)
                 Map or position or router
         @param: settings (dict)
         @param: profiles (dict)
-                Must contain the entry profiles[profile_type][profile_name].
+                Must contain the entry profiles[provider_type][profile_name].
                 The entry is a dict with keys class_name and parameters.
         @param: provider_dict (dict)
                 Mapping of class_name to a Class pointer.
@@ -104,29 +113,29 @@ class MapWindow(Gtk.Window):
         
         # The profile and settings.json can be edited by hand,
         # so let's do a sanity check
-        if profile_type not in profiles:
-            e = "Profile type \'" + str(profile_type) + "\' not found in profiles json. "
+        if provider_type not in profiles:
+            e = "Profile type \'" + str(provider_type) + "\' not found in profiles json. "
             e += "Choose one of " + str( list(profiles.keys() ))
             raise Exception(e)
-        if profile_type not in settings:
-            e = "Profile type \'" + str(profile_type) + "\' not found in settings json. "
+        if provider_type not in settings:
+            e = "Profile type \'" + str(provider_type) + "\' not found in settings json. "
             e += "Choose one of " + str( list(settings.keys() ))
             raise Exception(e)
             
-        profile_name = settings[profile_type]
+        profile_name = settings[provider_type]
         
-        if profile_name not in profiles[profile_type]:
+        if profile_name not in profiles[provider_type]:
             e  = "Profile name \'" + str(profile_name) + "\' "
-            e += "in type \'" + str(profile_type) + "\' not found. "
-            e += "Choose one of " + str( list(profiles[profile_type].keys() ))
+            e += "in type \'" + str(provider_type) + "\' not found. "
+            e += "Choose one of " + str( list(profiles[provider_type].keys() ))
             raise Exception(e)
-        if "class_name" not in profiles[profile_type][profile_name]:
-            raise Exception("class_name not found in profile " + str(profile_type) + " / " + str(profile_name) )
-        if "parameters" not in profiles[profile_type][profile_name]:
-            raise Exception("parameters not found in profile " + str(profile_type) + " / " + str(profile_name) )
+        if "class_name" not in profiles[provider_type][profile_name]:
+            raise Exception("class_name not found in profile " + str(provider_type) + " / " + str(profile_name) )
+        if "parameters" not in profiles[provider_type][profile_name]:
+            raise Exception("parameters not found in profile " + str(provider_type) + " / " + str(profile_name) )
 
-        provider_class_name = profiles[profile_type][profile_name]["class_name"]
-        params              = profiles[profile_type][profile_name]["parameters"]
+        provider_class_name = profiles[provider_type][profile_name]["class_name"]
+        params              = profiles[provider_type][profile_name]["parameters"]
         ProviderClass       = provider_dict[provider_class_name]
         provider            = ProviderClass(**params)
         return provider
@@ -134,8 +143,8 @@ class MapWindow(Gtk.Window):
     def enrich_results_with_data_rel_to_ego_pos(self,list_of_result_dicts):
         for res in list_of_result_dicts:
             airline = calc.angles.calc_properties_of_airline(
-                         lat1_deg = self.position.latitude,
-                         lon1_deg = self.position.longitude,
+                         lat1_deg = self.providers["position"].latitude,
+                         lon1_deg = self.providers["position"].longitude,
                          lat2_deg = float(res["lat"]),
                          lon2_deg = float(res["lon"])
                          )
@@ -226,17 +235,17 @@ class MapWindow(Gtk.Window):
  
         dropdown_menus = {}
     
-        profile_types = list( self.profiles.keys() )
-        for i in np.arange(len(profile_types)):
+        provider_types = list( self.profiles.keys() )
+        for i in np.arange(len(provider_types)):
             
             # Label
             label = Gtk.Label()
-            label.set_text(profile_types[i])
+            label.set_text(provider_types[i])
             layer.attach(child=label, left=0, top=i+1, width=1, height=1)
             
             # Dropdown menu
-            dropdown_options = list(  self.profiles[profile_types[i]].keys()  )
-            previously_chosen = self.settings[profile_types[i]]
+            dropdown_options = list(  self.profiles[provider_types[i]].keys()  )
+            previously_chosen = self.settings[provider_types[i]]
             prev_ind = dropdown_options.index(previously_chosen)
             
             dropdown_menu = Gtk.ComboBoxText()
@@ -247,14 +256,15 @@ class MapWindow(Gtk.Window):
             dropdown_menu.set_active( prev_ind )
             layer.attach(child=dropdown_menu, left=1, top=i+1, width=1, height=1)
 
-            dropdown_menus[profile_types[i]] = dropdown_menu
+            dropdown_menus[provider_types[i]] = dropdown_menu
             
         cancel_button = Gtk.Button.new_with_label("Cancel")
         cancel_button.connect("clicked", self.on_settings_cancel_clicked)
         layer.attach(child = cancel_button, left=0, top=0, width=1, height=1)
         
-        #apply_button = 
-        print(dropdown_menus)
+        apply_button = widgets.buttons.ApplySettingsButton(label="OK", dropdown_menus_to_oversee = dropdown_menus)
+        apply_button.connect("clicked", self.on_settings_apply_clicked)
+        layer.attach(child = apply_button, left=1, top=0, width=1, height=1)
 
         layer.show_all()
 
@@ -262,7 +272,26 @@ class MapWindow(Gtk.Window):
     def on_settings_button_clicked(self, button):
         self.make_settings_menu( layer = self.interactive_layer )
         
+        
     def on_settings_cancel_clicked(self, button):
+        self.make_nav_buttons( layer = self.interactive_layer )
+        
+        
+    def on_settings_apply_clicked(self, button):
+        
+        dropdown_menus = button.dropdown_menus_to_oversee
+        provider_types = list( self.profiles.keys() )
+
+        for provider_type in provider_types:
+            old_setting = self.settings[provider_type]
+            new_setting = dropdown_menus[provider_type].get_active_text()
+            if old_setting != new_setting:
+                self.make_message_button(layer = self.interactive_layer, label = "Waiting for initialisation of " + provider_type + " provider ...")
+                
+                self.settings[provider_type]  = new_setting
+                self.providers[provider_type] = self.make_provider_object( provider_type = provider_type, settings = self.settings, profiles = self.profiles, provider_dict = self.collect_available_provider_classes()[provider_type] )
+                self.settings_have_changed    = True
+
         self.make_nav_buttons( layer = self.interactive_layer )
 
 
@@ -271,7 +300,7 @@ class MapWindow(Gtk.Window):
         self.make_message_button(layer = self.interactive_layer, label = "Waiting for search results ...")
         
         # request results from the search provider
-        list_of_result_dicts = self.search.find( entry.get_text() )
+        list_of_result_dicts = self.providers["search"].find( entry.get_text() )
         list_of_result_dicts = self.enrich_results_with_data_rel_to_ego_pos(list_of_result_dicts)
         
         # make a Button for each result  
@@ -282,12 +311,12 @@ class MapWindow(Gtk.Window):
         
         self.make_message_button(layer = self.interactive_layer, label = "Waiting for route calculation ...")
                 
-        self.router.set_trip(waypoints = np.array([ [self.position.longitude, self.position.latitude],[float(button.result["lon"]), float(button.result["lat"])] ]))
-        polyline = self.router.get_polyline_of_whole_trip()
+        self.providers["router"].set_trip(waypoints = np.array([ [self.providers["position"].longitude, self.providers["position"].latitude],[float(button.result["lon"]), float(button.result["lat"])] ]))
+        polyline = self.providers["router"].get_polyline_of_whole_trip()
         polyline["color_rgba"] = (0,0,1,.5)
         
         self.marker_layer.make_marker_list( destination    = button.result, 
-                                            map_copyright  = self.map.map_copyright,
+                                            map_copyright  = self.providers["map"].map_copyright,
                                             trip_polylines = [polyline],
                                           )
 
@@ -296,7 +325,7 @@ class MapWindow(Gtk.Window):
 
                   
     def on_timeout(self, data):
-        self.position.update_position()
+        self.providers["position"].update_position()
         
         #TODO: the following map size allocation only works 
         #      if self.widgets is a vertical box (portrait mode)
@@ -307,30 +336,31 @@ class MapWindow(Gtk.Window):
         map_width = window_size[0]
         map_height = window_size[1] - sum_of_all_widget_heights_except_map_canvas
 
-        cropped_tile = self.map.get_cropped_tile( 
+        cropped_tile = self.providers["map"].get_cropped_tile( 
                                     xsize_px = map_width, 
                                     ysize_px = map_height, 
-                                    center_lat_deg = self.position.latitude, 
-                                    center_lon_deg = self.position.longitude
+                                    center_lat_deg = self.providers["position"].latitude, 
+                                    center_lon_deg = self.providers["position"].longitude
                                     )
         self.map_layer.update(cropped_tile)
-        self.marker_layer.update(cropped_tile = cropped_tile, position = self.position )
+        self.marker_layer.update(cropped_tile = cropped_tile, position = self.providers["position"] )
         
         repeat = True
         return repeat
     
     def on_zoom_in_button_clicked(self, button):
-        self.map.zoom_in()
+        self.providers["map"].zoom_in()
 
     def on_zoom_out_button_clicked(self, button):
-        self.map.zoom_out()
+        self.providers["map"].zoom_out()
     
     def on_destroy(self, object_to_destroy):
         """
         Actions to be performed before destroying this application.
         """
-        self.position.disconnect()
-        print("Position provider disconnected.")
+        self.providers["position"].disconnect()
+        if self.settings_have_changed:
+            print("settings have been changed. Someone should write the changed settings back.")
         #TODO: write (possibly modified) settings back to hard drive
         Gtk.main_quit(object_to_destroy)
     

@@ -1,5 +1,5 @@
 {
-    "Map Provider": {
+    "map": {
         "Open Topo Map": {
             "class_name": "SlippyMap", 
             "parameters": 
@@ -34,7 +34,7 @@
                 }
         }
     },
-    "Position Provider": {
+    "position": {
         "Serial NMEA": {
             "class_name": "PositionSerialNMEA", 
             "parameters": {"serial_port": "/dev/ttyUSB1"}
@@ -47,7 +47,7 @@
             "parameters": {}
         }
     },
-    "Search Provider": {
+    "search": {
         "Nominatim": {
             "class_name": "Nominatim",
             "parameters": {"url_template": "https://nominatim.openstreetmap.org/search/{query}?format=json"}
@@ -57,7 +57,7 @@
             "parameters": {}
         }
     },
-    "Routing Provider": {
+    "router": {
        "No Routing": {
             "class_name": "Router",
             "parameters": {}

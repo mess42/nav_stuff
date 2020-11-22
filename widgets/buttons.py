@@ -12,4 +12,9 @@ class ResultButton(Gtk.Button):
         self.set_alignment(0,0)
         self.result = result
 
-
+class ApplySettingsButton(Gtk.Button):
+    def __init__(self, label, dropdown_menus_to_oversee={} ):
+        Gtk.Button.__init__(self)
+        self.set_label( label )
+        #self.set_alignment(0,0)
+        self.dropdown_menus_to_oversee = dropdown_menus_to_oversee

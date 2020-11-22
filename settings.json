@@ -1,6 +1,6 @@
 {
-    "Map Provider": "Debug Map",
-    "Position Provider": "Position Simulation",
-    "Search Provider": "Nominatim",
-    "Routing Provider": "OSRM"
+    "map": "Debug Map",
+    "position": "Position Simulation",
+    "search": "Nominatim",
+    "router": "OSRM"
 }
