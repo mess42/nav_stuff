@@ -28,8 +28,9 @@ class MapWindow(Gtk.Window):
         self.connect("destroy", self.on_destroy)
         
         # Load Configuration files
-        self.profiles = self.json2dict(profiles_filename)
-        self.settings   = self.json2dict(settings_filename)
+        self.profiles              = self.json2dict(profiles_filename)
+        self.settings              = self.json2dict(settings_filename)
+        self.settings_filename     = settings_filename
         self.settings_have_changed = False
 
         # providers for map, position, search, and routing
@@ -359,9 +360,12 @@ class MapWindow(Gtk.Window):
         Actions to be performed before destroying this application.
         """
         self.providers["position"].disconnect()
-        if self.settings_have_changed:
-            print("settings have been changed. Someone should write the changed settings back.")
-        #TODO: write (possibly modified) settings back to hard drive
+
+        if self.settings_have_changed:            
+            f = open(self.settings_filename,"w")
+            json.dump(self.settings, f)
+            f.close()
+
         Gtk.main_quit(object_to_destroy)
     
         
