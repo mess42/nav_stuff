@@ -11,6 +11,7 @@ import numpy as np
 import providers.maps
 import providers.positions
 import providers.search
+import providers.route
 import widgets.marker_layer
 import widgets.map_layer
 import widgets.result_button
@@ -34,7 +35,8 @@ class MapWindow(Gtk.Window):
         self.map      = self.make_provider_object( profile_type = "MapProviders",      profile_name = config["map_profile"], profiles = profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
         self.position = self.make_provider_object( profile_type = "PositionProviders", profile_name = config["pos_profile"], profiles = profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
         self.search   = self.make_provider_object( profile_type = "SearchProviders",   profile_name = config["search_profile"], profiles = profiles, provider_dict = providers.search.get_mapping_of_names_to_classes() )
-                
+        self.router   = providers.route.OSRM("https://router.project-osrm.org/trip/v1/driving/{waypoints}?source=first&destination=last&steps=true&geometries=geojson")
+        
         # Create widgets and auto-update them
         self.create_widgets()
         GLib.timeout_add(update_delay_in_ms, self.on_timeout, None)
@@ -171,7 +173,6 @@ class MapWindow(Gtk.Window):
         self.remove_all_children( layer )
         
         if len(list_of_result_dicts) == 0:
-            print("oh no! nothing found")
             button = Gtk.Button.new_with_label("no results found.")
             button.connect("clicked", self.from_no_result_to_nav_buttons)
             layer.attach( child=button, left=0, top=0, width=1, height=1)
@@ -207,7 +208,14 @@ class MapWindow(Gtk.Window):
         self.make_nav_buttons( layer = self.interactive_layer )        
         self.entry.set_text(button.result["display_name"])
         
-        self.marker_layer.make_marker_list( destination = button.result, map_copyright= self.map.map_copyright)
+        self.router.set_trip(waypoints = np.array([ [self.position.longitude, self.position.latitude],[float(button.result["lon"]), float(button.result["lat"])] ]))
+        polyline = self.router.get_polyline_of_whole_trip()
+        polyline["color_rgba"] = (0,0,1,.5)
+        
+        self.marker_layer.make_marker_list( destination    = button.result, 
+                                            map_copyright  = self.map.map_copyright,
+                                            trip_polylines = [polyline],
+                                          )
 
                   
     def on_timeout(self, data):

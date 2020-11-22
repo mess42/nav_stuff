@@ -41,14 +41,14 @@ class RasterTile(object):
         No sanity check is performed.
         The indices returned may be outside the tile.
         
-        @param lat_deg (float)
-        @param lon_deg (float)
+        @param lat_deg (float or 1d numpy array)
+        @param lon_deg (float or 1d numpy array)
 
-        @return iy (int)
-        @return ix (int)
+        @return iy (float or 1d numpy array)
+        @return ix (float or 1d numpy array)
         """
-        ix = int(np.round(self.xsize_px * (lon_deg - self.west_lon) / (self.east_lon - self.west_lon)))
-        iy = int(np.round(self.ysize_px * (lat_deg - self.north_lat) / (self.south_lat - self.north_lat)))
+        ix = np.round(self.xsize_px * (lon_deg - self.west_lon) / (self.east_lon - self.west_lon))
+        iy = np.round(self.ysize_px * (lat_deg - self.north_lat) / (self.south_lat - self.north_lat))
         return iy, ix
 
     def pxpos_to_angles(self, iy, ix):
@@ -92,10 +92,10 @@ class RasterTile(object):
         """
         iy_center, ix_center = self.angles_to_pxpos( lat_deg = center_lat_deg, lon_deg = center_lon_deg )    
         
-        i_left   = ix_center - cropped_xsize_px // 2
-        i_right  = i_left    + cropped_xsize_px
-        i_top    = iy_center - cropped_ysize_px // 2
-        i_bottom = i_top     + cropped_ysize_px
+        i_left   = int( ix_center - cropped_xsize_px / 2 )
+        i_right  = int( i_left    + cropped_xsize_px )
+        i_top    = int( iy_center - cropped_ysize_px / 2 )
+        i_bottom = int( i_top     + cropped_ysize_px )
         
         return i_top, i_bottom, i_left, i_right
 

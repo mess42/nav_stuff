@@ -59,7 +59,14 @@ class FixedLatLonMarker(Marker):
         """
         @brief: Marker with a fixed position in latitude and longitude.
         
-        Use for fixed objects like Destination, waypoints, or points of interest.
+        @param draftsman (draftsman object)
+        @param lat_deg (float or 1d numpy array)
+        @param lon_deg (float or 1d numpy array)
+            type (float or array) must be chosen 
+            to fit the draftsman.draw() arguments.
+        
+        Use for fixed objects like 
+        destination, waypoints, points of interest, polygon lines.
         """
         Marker.__init__(self, draftsman)
         self.lat_deg = lat_deg
@@ -391,3 +398,24 @@ class ArrowWithOffsetLabel(Draftsman):
 
             self.text.label = str( np.round(offset_m/1000, 1) ) + " km"
             self.text.draw(ctx, xtext, ytext, heading_rad)
+            
+
+class PolyLine(Draftsman):
+    def __init__(self, 
+                 color_rgba = (0,0,0,1),
+                 linewidth_px = 10
+                 ):
+        self.color_rgba = color_rgba
+        self.linewidth_px = linewidth_px
+                
+    def draw(self, ctx, x, y, heading_rad, dx_px=0, dy_px=0, dx_m=0, dy_m=0):
+                
+        ctx.set_line_width(self.linewidth_px)
+        ctx.set_source_rgba(*self.color_rgba)
+        
+        ctx.move_to(x[0], y[0])        
+        for i in np.arange(len(x)-1)+1:
+            ctx.line_to(x[i] , y[i])
+
+        ctx.stroke()
+        ctx.set_line_width(1)
