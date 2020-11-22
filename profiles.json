@@ -56,5 +56,15 @@
             "class_name": "OSMScout",
             "parameters": {}
         }
+    },
+    "RoutingProviders": {
+       "No Routing": {
+            "class_name": "Router",
+            "parameters": {}
+        },
+        "OSRM":{
+            "class_name": "OSRM",
+            "parameters": {"url_template": "https://router.project-osrm.org/trip/v1/driving/{waypoints}?source=first&destination=last&steps=true&geometries=geojson"}
+        }
     }
 }

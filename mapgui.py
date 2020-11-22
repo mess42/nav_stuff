@@ -32,10 +32,10 @@ class MapWindow(Gtk.Window):
         config   = self.json2dict(config_filename)
 
         # Create Map and Position provider
-        self.map      = self.make_provider_object( profile_type = "MapProviders",      profile_name = config["map_profile"], profiles = profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
-        self.position = self.make_provider_object( profile_type = "PositionProviders", profile_name = config["pos_profile"], profiles = profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
-        self.search   = self.make_provider_object( profile_type = "SearchProviders",   profile_name = config["search_profile"], profiles = profiles, provider_dict = providers.search.get_mapping_of_names_to_classes() )
-        self.router   = providers.route.OSRM("https://router.project-osrm.org/trip/v1/driving/{waypoints}?source=first&destination=last&steps=true&geometries=geojson")
+        self.map      = self.make_provider_object( profile_type = "Map Provider",      config = config, profiles = profiles, provider_dict = providers.maps.get_mapping_of_names_to_classes() )
+        self.position = self.make_provider_object( profile_type = "Position Provider", config = config, profiles = profiles, provider_dict = providers.positions.get_mapping_of_names_to_classes() )
+        self.search   = self.make_provider_object( profile_type = "Search Provider",   config = config, profiles = profiles, provider_dict = providers.search.get_mapping_of_names_to_classes() )
+        self.router   = self.make_provider_object( profile_type = "Routing Provider",  config = config, profiles = profiles, provider_dict = providers.route.get_mapping_of_names_to_classes() )
         
         # Create widgets and auto-update them
         self.create_widgets()

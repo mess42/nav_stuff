@@ -6,6 +6,19 @@ import numpy as np
 import providers.download_helpers
 #import calc.angles
 
+
+def get_mapping_of_names_to_classes():
+    """
+    @brief: Pointers to all classes that shall be usable.
+    
+    @return d (dict)
+    """
+    d = {"Router": Router,
+         "OSRM": OSRM
+        }
+    return d
+
+
 def ordinal(n):
     nth = ""
     if n == 1:
@@ -18,9 +31,6 @@ def ordinal(n):
         nth = str(n) + "th"
     # there shouldn't be a roundabout with more than 20 exits
     return nth
-
-
-
 
 
 class Router(object):

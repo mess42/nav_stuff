@@ -1,5 +1,6 @@
 {
     "map_profile": "Debug Map",
     "pos_profile": "Position Simulation",
-    "search_profile": "Nominatim"
+    "search_profile": "Nominatim",
+    "routing_profile": "OSRM"
 }
