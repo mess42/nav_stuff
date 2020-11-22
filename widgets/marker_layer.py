@@ -13,7 +13,7 @@ class MarkerLayerWidget(Gtk.DrawingArea):
                 
         self.list_of_markers = self.make_marker_list(map_copyright=map_copyright)
         
-    def make_marker_list(self, destination = None, trip_polylines = [], map_copyright=""):
+    def make_marker_list(self, destination = None, route_polylines = [], map_copyright=""):
         m = []
         
         # Map copyright
@@ -38,7 +38,7 @@ class MarkerLayerWidget(Gtk.DrawingArea):
                                         )]
     
         # Polygon lines
-        for polyline in trip_polylines:
+        for polyline in route_polylines:
             m += [markers.FixedLatLonMarker(
                                         draftsman = markers.PolyLine(color_rgba=polyline["color_rgba"]),
                                         lat_deg = polyline["lat_deg"],

@@ -54,15 +54,15 @@ class Router(object):
         self.waypoints = waypoints
         self.trip = {}
         if len(self.waypoints) != 0:
-            self.trip = self.set_trip(waypoints)
+            self.route = self.set_route(waypoints)
 
-    def set_trip(self, waypoints):
+    def set_route(self, waypoints):
         """
         @brief: Store the waypoints and pre-compute the routing.
         
         @param waypoints: (2d numpy array of Nx2 float)
              Longitudes and latitudes of 
-             trip start, intermediate points, and final destination.
+             route start, intermediate points, and final destination.
              Intermediate points are optional. 
              Use intermediate points if you wish to go via a certain location,
              or for a round trip with start equal to final destination.
@@ -71,12 +71,12 @@ class Router(object):
         """
         pass
 
-    def get_polyline_of_whole_trip(self):
+    def get_polyline_of_whole_route(self):
         return {"lat_deg":[], "lon_deg":[]}
 
 
 class OSRM(Router):    
-    def set_trip(self, waypoints):
+    def set_route(self, waypoints):
 
         waypoints_as_str = ";".join( list( ",".join(point) for point in np.array(waypoints, dtype=str) ) )
         url = self.url_template.replace("{waypoints}", waypoints_as_str)
@@ -85,14 +85,14 @@ class OSRM(Router):
         if d["code"].upper() != "OK":
             raise Exception(d["code"])
         
-        self.trip = d["trips"][0]
+        self.route = d["routes"][0]
 
-    def get_polyline_of_whole_trip(self):
+    def get_polyline_of_whole_route(self):
 
         lat_deg = []
         lon_deg = []
-        if ("geometry" in self.trip) and ("coordinates" in self.trip["geometry"]):
-            lonlats = np.array(self.trip["geometry"]["coordinates"])
+        if ("geometry" in self.route) and ("coordinates" in self.route["geometry"]):
+            lonlats = np.array(self.route["geometry"]["coordinates"])
             lat_deg = lonlats[:,1]
             lon_deg = lonlats[:,0]
         
@@ -149,9 +149,9 @@ if __name__ == "__main__":
     waypoints = np.array([[13.388860,52.517037],[13.397634,52.529407],[13.428555,52.523219],[13.418555,52.523215]])
 
     router = OSRM( url_template= "https://router.project-osrm.org/trip/v1/driving/{waypoints}?source=first&destination=last&steps=true&geometries=geojson")    
-    router.set_trip(waypoints)
+    router.set_route(waypoints)
     
-    lats_deg, lons_deg = router.get_polyline_of_whole_trip()
+    lats_deg, lons_deg = router.get_polyline_of_whole_route()
     
 """        
     for leg in trip["legs"]:

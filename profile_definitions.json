@@ -64,7 +64,7 @@
         },
         "OSRM":{
             "class_name": "OSRM",
-            "parameters": {"url_template": "https://router.project-osrm.org/trip/v1/driving/{waypoints}?source=first&destination=last&steps=true&geometries=geojson"}
+            "parameters": {"url_template": "https://router.project-osrm.org/route/v1/driving/{waypoints}?steps=true&geometries=geojson"}
         }
     }
 }

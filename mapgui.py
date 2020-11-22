@@ -312,16 +312,16 @@ class MapWindow(Gtk.Window):
         
         self.make_message_button(layer = self.interactive_layer, label = "Waiting for route calculation ...")
                 
-        self.providers["router"].set_trip(waypoints = np.array([ [self.providers["position"].longitude, self.providers["position"].latitude],[float(button.result["lon"]), float(button.result["lat"])] ]))
+        self.providers["router"].set_route(waypoints = np.array([ [self.providers["position"].longitude, self.providers["position"].latitude],[float(button.result["lon"]), float(button.result["lat"])] ]))
         polylines = []
-        whole_trip_line = self.providers["router"].get_polyline_of_whole_trip()
-        whole_trip_line["color_rgba"] = (0,0,1,.5)
-        if len(whole_trip_line["lat_deg"]) != 0:
-            polylines.append(whole_trip_line)
+        whole_route_line = self.providers["router"].get_polyline_of_whole_route()
+        whole_route_line["color_rgba"] = (0,0,1,.5)
+        if len(whole_route_line["lat_deg"]) != 0:
+            polylines.append(whole_route_line)
         
         self.marker_layer.make_marker_list( destination    = button.result, 
                                             map_copyright  = self.providers["map"].map_copyright,
-                                            trip_polylines = polylines,
+                                            route_polylines = polylines,
                                           )
 
         self.make_nav_buttons( layer = self.interactive_layer )        
