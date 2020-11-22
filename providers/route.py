@@ -91,10 +91,13 @@ class OSRM(Router):
 
         lat_deg = []
         lon_deg = []
-        if ("geometry" in self.route) and ("coordinates" in self.route["geometry"]):
-            lonlats = np.array(self.route["geometry"]["coordinates"])
-            lat_deg = lonlats[:,1]
-            lon_deg = lonlats[:,0]
+            
+        if "legs" in self.route:
+            for leg in self.route["legs"]:
+                for step in leg["steps"]:
+                    coords = np.array(step["geometry"]["coordinates"])
+                    lat_deg = np.hstack([lat_deg, coords[:,1]])
+                    lon_deg = np.hstack([lon_deg, coords[:,0]])
         
         return {"lat_deg":lat_deg, "lon_deg":lon_deg}
 
