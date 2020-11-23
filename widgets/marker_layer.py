@@ -47,7 +47,7 @@ class MarkerLayerWidget(Gtk.DrawingArea):
            
             
         # Ego marker
-        m += [markers.FollowingMarker(draftsman = markers.Pin(fill_color=(0,1,0)))]
+        m += [markers.FollowingMarker(draftsman = markers.Dot(fill_color=(0,1,0), border_color=(0,0,0)))]
         
         self.list_of_markers = m
         return m

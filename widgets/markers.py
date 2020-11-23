@@ -211,6 +211,28 @@ class Draftsman(object):
         """
         raise NotImplementedError()
 
+class Dot(Draftsman):
+    def __init__(self, 
+                 radius=10, 
+                 fill_color=(1,0,0), 
+                 border_color=(0,0,0),
+                 ):
+        self.radius       = radius
+        self.fill_color   = fill_color
+        self.border_color = border_color
+        
+    def draw(self, ctx, x, y, heading_rad, dx_px=0, dy_px=0, dx_m=0, dy_m=0):
+        
+        ctx.move_to(x,y)
+        ctx.arc( x , y, self.radius, 0, 2*np.pi)
+        
+        # fill and stroke the dot
+        ctx.set_source_rgb(*self.border_color)
+        ctx.stroke_preserve()
+        ctx.set_source_rgb(*self.fill_color)
+        ctx.fill()
+
+
 class Pin(Draftsman):
     def __init__(self, 
                  width=20, 
