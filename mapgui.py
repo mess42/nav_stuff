@@ -53,10 +53,13 @@ class MapWindow(Gtk.Window):
 
         self.widgets = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.entry = Gtk.Entry()
         #self.entry.set_text("Hello World")
         self.entry.connect("activate", self.on_search_activated)
-        self.widgets.add(self.entry)
+        
+        hbox.add(self.entry)
+        self.widgets.add(hbox)
         
 
         # Create Map Canvas
