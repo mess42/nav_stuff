@@ -58,7 +58,12 @@ class MapWindow(Gtk.Window):
         #self.entry.set_text("Hello World")
         self.entry.connect("activate", self.on_search_activated)
         
-        hbox.add(self.entry)
+        size = Gtk.icon_size_from_name("Button")
+        search_button = widgets.buttons.SearchButton(entry = self.entry, icon_size=size)
+        search_button.connect("clicked", self.on_search_activated)
+        
+        hbox.pack_start(child = self.entry, expand=True, fill=True, padding=0)
+        hbox.pack_end(  child = search_button, expand=False, fill=False, padding=0)
         self.widgets.add(hbox)
         
 

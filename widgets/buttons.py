@@ -18,3 +18,13 @@ class ApplySettingsButton(Gtk.Button):
         self.set_label( label )
         #self.set_alignment(0,0)
         self.dropdown_menus_to_oversee = dropdown_menus_to_oversee
+        
+class SearchButton(Gtk.Button):
+    def __init__(self, entry, icon_size):
+        Gtk.Button.__init__(self)
+        img = Gtk.Image.new_from_icon_name(Gtk.STOCK_FIND, icon_size)
+        self.set_image(img)
+        self.entry = entry
+    
+    def get_text(self):
+        return self.entry.get_text()
