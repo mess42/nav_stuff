@@ -183,15 +183,16 @@ class MapWindow(Gtk.Window):
         
         self.remove_all_children( layer )
 
-        zoom_in_button = Gtk.Button.new_with_label("+")
+        size = Gtk.icon_size_from_name("Button")
+        zoom_in_button = Gtk.Button.new_from_icon_name(Gtk.STOCK_ZOOM_IN, size )
         zoom_in_button.connect("clicked", self.on_zoom_in_button_clicked)
         layer.attach( child = zoom_in_button, left=0, top=0, width=1, height=1)
 
-        zoom_out_button = Gtk.Button.new_with_label("-")
+        zoom_out_button = Gtk.Button.new_from_icon_name(Gtk.STOCK_ZOOM_OUT, size )  
         zoom_out_button.connect("clicked", self.on_zoom_out_button_clicked)
         layer.attach( child = zoom_out_button, left=0, top=1, width=1, height=1)
         
-        settings_button = Gtk.Button.new_with_label("Settings")
+        settings_button = Gtk.Button.new_from_icon_name(Gtk.STOCK_EXECUTE, size )        
         settings_button.connect("clicked", self.on_settings_button_clicked)
         layer.attach( child = settings_button, left=0, top=2, width=1, height=1)
         
