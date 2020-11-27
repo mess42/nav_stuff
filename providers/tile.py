@@ -23,6 +23,16 @@ class RasterTile(object):
         @param angular_extent (dict)
                             north, south, east and west 
                             latitude and longitude in deg.
+                            
+        Approximation for the scale: 1 degree latitude is 111 km.
+        (Actually, the earth is elliptical, and an
+        equatorial degree latitude corresponds to 110574 m, whereas a
+        polar degree latitude corresponds to 111694 m,
+        so this result is off by up to 0.5%)
+        
+        In the Mercator projection, the longitudinal magnification
+        varies greatly with latitude, so a scale may be inappropriate
+        for tiles with a large lateral span.
         """
         self.zoom          = zoom
         self.raster_image  = raster_image
@@ -33,6 +43,10 @@ class RasterTile(object):
         shap               = np.shape(raster_image)
         self.ysize_px      = shap[0]
         self.xsize_px      = shap[1]
+        
+        total_ns_extent_in_m   = 111000 * (self.north_lat - self.south_lat)
+        self.scale_in_m_per_px = total_ns_extent_in_m / self.ysize_px
+        
         
     def angles_to_pxpos(self, lat_deg, lon_deg):
         """
@@ -141,23 +155,4 @@ class RasterTile(object):
         i_top, i_bottom, i_left, i_right = self.get_cropping_indices( center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px)
         cropped_tile = self.get_cropped_tile_by_indices( i_top=i_top, i_bottom=i_bottom, i_left=i_left, i_right=i_right)
         return cropped_tile
-
-    def get_scale_in_m_per_px(self):
-        """
-        @brief: Get a map scale.
-        
-        Approximation: 1 degree latitude is 111 km.
-        (Actually, the earth is elliptical, and an
-        equatorial degree latitude corresponds to 110574 m, whereas a
-        polar degree latitude corresponds to 111694 m,
-        so this result is off by up to 0.5%)
-        
-        In the Mercator projection, the longitudinal magnification
-        varies greatly with latitude, so a scale may be inappropriate
-        for tiles with a large lateral span.
-        
-        @return scale (float)
-        """
-        total_ns_extent_in_m = 111000 * (self.north_lat - self.south_lat)
-        return total_ns_extent_in_m / self.ysize_px
         

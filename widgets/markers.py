@@ -161,7 +161,7 @@ class MetricScaleBarMarker(FixedXYMarker):
             self.candidate_labels.append(s)
 
     def update(self, cropped_tile, position):
-        candidate_sizes_px = self.candidate_sizes_m / cropped_tile.get_scale_in_m_per_px()
+        candidate_sizes_px = self.candidate_sizes_m / cropped_tile.scale_in_m_per_px
         
         # Find the scale size closest to the desired one
         i = np.argmin(abs(candidate_sizes_px - self.desired_size_px))
