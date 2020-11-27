@@ -1,5 +1,16 @@
 {
     "map": {
+       "Debug Map": {
+            "class_name": "DebugMap", 
+            "parameters": 
+                {
+                "url_template": "",
+                "map_copyright": "Debug Map. Please choose another map profile. Normally, the map data copyright text would appear here.",
+                "min_zoom": 5,
+                "max_zoom": 19,
+                "default_zoom":17
+                }
+        },
         "Open Topo Map": {
             "class_name": "SlippyMap", 
             "parameters": 
@@ -21,30 +32,19 @@
                 "max_zoom": 42,
                 "default_zoom":17
                 }
-        }, 
-        "Debug Map": {
-            "class_name": "DebugMap", 
-            "parameters": 
-                {
-                "url_template": "",
-                "map_copyright": "Debug Map. Please choose another map profile. Normally, the map data copyright text would appear here.",
-                "min_zoom": 5,
-                "max_zoom": 19,
-                "default_zoom":17
-                }
         }
     },
     "position": {
+        "Position Simulation": {
+            "class_name": "PositionSimulation", 
+            "parameters": {}
+        },
         "Serial NMEA": {
             "class_name": "PositionSerialNMEA", 
             "parameters": {"serial_port": "/dev/ttyUSB1"}
         }, 
         "GeoClue": {
             "class_name": "PositionGeoClue", "parameters": {}
-        },
-        "Position Simulation": {
-            "class_name": "PositionSimulation", 
-            "parameters": {}
         }
     },
     "search": {

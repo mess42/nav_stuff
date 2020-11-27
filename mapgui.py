@@ -5,6 +5,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib
 
+import os
 import json
 import numpy as np
 
@@ -29,12 +30,15 @@ class MapWindow(Gtk.Window):
         
         # Load Configuration files
         self.profiles              = self.json2dict(profiles_filename)
-        self.settings              = self.json2dict(settings_filename)
         self.settings_filename     = settings_filename
-        self.settings_have_changed = False
+        if os.path.isfile(settings_filename):
+            self.settings              = self.json2dict(settings_filename)
+            self.settings_have_changed = False
+        else:
+            self.settings = self.get_new_settings_dict(profiles=self.profiles)
+            self.settings_have_changed = True
 
         # providers for map, position, search, and routing
-        
         self.providers = {}
         for provider_type in self.profiles:
             self.providers[provider_type] = self.make_provider_object( provider_type = provider_type, settings = self.settings, profiles = self.profiles, provider_dict = self.collect_available_provider_classes()[provider_type] )
@@ -64,12 +68,12 @@ class MapWindow(Gtk.Window):
         
         hbox.pack_start(child = self.entry, expand=True, fill=True, padding=0)
         hbox.pack_end(  child = search_button, expand=False, fill=False, padding=0)
-        self.widgets.add(hbox)
+        self.widgets.pack_start(child = hbox, expand=False, fill=False, padding=0)
         
 
         # Create Map Canvas
         self.canvas = Gtk.Overlay().new()
-        self.widgets.add(self.canvas)
+        self.widgets.pack_start(child = self.canvas, expand=True, fill=True, padding=0)
 
         # Create Map (background layer) 
         # and Markers (Overlay on map)
@@ -93,7 +97,14 @@ class MapWindow(Gtk.Window):
         dic = json.load(f)
         f.close()
         return dic
-
+    
+    def get_new_settings_dict(self, profiles):
+        settings = {}
+        for provider_type in profiles:
+            s = list( profiles[provider_type].keys() )
+            settings[provider_type] = s[0]
+        return settings
+            
 
     def collect_available_provider_classes(self):
         p = { "map":      providers.maps.get_mapping_of_names_to_classes(),
@@ -322,6 +333,9 @@ class MapWindow(Gtk.Window):
         self.make_message_button(layer = self.interactive_layer, label = "Waiting for route calculation ...")
                 
         self.providers["router"].set_route(waypoints = np.array([ [self.providers["position"].longitude, self.providers["position"].latitude],[float(button.result["lon"]), float(button.result["lat"])] ]))
+        
+        self.providers["router"].get_foo() #TODO: remove this line
+        
         polylines = []
         whole_route_line = self.providers["router"].get_polyline_of_whole_route()
         whole_route_line["color_rgba"] = (0,0,1,.5)
