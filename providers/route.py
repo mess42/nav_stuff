@@ -86,7 +86,7 @@ class OSRM(Router):
             raise Exception(d["code"])
         
         self.route = d["routes"][0]
-
+        
     def get_polyline_of_whole_route(self):
 
         lat_deg = []
@@ -100,6 +100,13 @@ class OSRM(Router):
                     lon_deg = np.hstack([lon_deg, coords[:,0]])
         
         return {"lat_deg":lat_deg, "lon_deg":lon_deg}
+
+    def get_foo(self):
+        if "legs" in self.route:
+            for leg in self.route["legs"]:
+                for step in leg["steps"]:
+                    print(step)
+                    print("\n\n")
 
 
 """
