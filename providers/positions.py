@@ -181,5 +181,5 @@ class PositionSimulation(PositionProvider):
         self.latitude  = 50.97872 + 0.001 * np.sin(phi)
         self.longitude = 11.3319 + 0.001 * np.cos(phi)
         self.velocity  = 0
-        self.heading   = phi * 180 /np.pi
+        self.heading   = -phi * 180 /np.pi
         return True

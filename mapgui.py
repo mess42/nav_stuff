@@ -366,7 +366,7 @@ class MapWindow(Gtk.Window):
                                     ysize_px = map_height, 
                                     center_lat_deg = self.providers["position"].latitude, 
                                     center_lon_deg = self.providers["position"].longitude,
-                                    angle_rad = 0
+                                    angle_rad = self.providers["position"].heading * np.pi / 180.
                                     )
         self.map_layer.update(cropped_tile)
         self.marker_layer.update(cropped_tile = cropped_tile, position = self.providers["position"] )

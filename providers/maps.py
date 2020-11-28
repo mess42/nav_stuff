@@ -225,6 +225,10 @@ class DebugMap(SlippyMap):
         arr[:,:,1] = rgb[1]
         arr[:,:,2] = rgb[2]
         
+        #make upper left corner white
+        for i in np.arange(30):
+            arr[i,:(30-i)] = 255
+        
         slippy_tile = tile.RasterTile( zoom           = zoom,
                                        raster_image   = arr,
                                        angular_extent = {"north_lat": north_lat, "east_lon":  east_lon, "south_lat": south_lat, "west_lon":  west_lon }
