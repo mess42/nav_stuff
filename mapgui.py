@@ -213,7 +213,7 @@ class MapWindow(Gtk.Window):
         
         settings_button = Gtk.Button.new_from_icon_name(Gtk.STOCK_EXECUTE, size )        
         settings_button.connect("clicked", self.on_settings_button_clicked)
-        layer.attach( child = settings_button, left=0, top=2, width=1, height=1)
+        layer.attach( child = settings_button, left=0, top=3, width=1, height=1)
         
         layer.show_all()
 
