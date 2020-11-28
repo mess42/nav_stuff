@@ -123,11 +123,10 @@ class FixedLatLonMarkerWithAlternativeOffTilePointer(Marker):
             self.y      = cropped_tile.ysize_px - self.border
             self.x      = cropped_tile.xsize_px//2 + (cropped_tile.ysize_px//2 - self.y ) * np.tan(self.heading)
 
-        scale      = cropped_tile.get_scale_in_m_per_px()
         self.dx_px = x-self.x
         self.dy_px = y-self.y
-        self.dx_m  = self.dx_px * scale
-        self.dy_m  = self.dy_px * scale
+        self.dx_m  = self.dx_px * cropped_tile.scale_in_m_per_px
+        self.dy_m  = self.dy_px * cropped_tile.scale_in_m_per_px
             
             
             

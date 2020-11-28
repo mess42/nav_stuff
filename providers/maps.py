@@ -109,7 +109,7 @@ class SlippyMap(object):
         return self.cached_slippy_tiles[(zoom, x, y)]
 
     
-    def get_cropped_tile(self, center_lat_deg, center_lon_deg, xsize_px, ysize_px ):
+    def get_rotated_cropped_tile(self, center_lat_deg, center_lon_deg, xsize_px, ysize_px, angle_rad=0 ):
         """
         @param center_lat_deg  (float)
         @param center_lon_deg  (float)
@@ -120,29 +120,37 @@ class SlippyMap(object):
         """
         
         # Can the large tile be cropped ?
-        cropping_indices_would_be_sane = self.large_tile.check_sanity_of_cropping_angles(
-                                                 center_lat_deg   = center_lat_deg, 
-                                                 center_lon_deg   = center_lon_deg, 
-                                                 cropped_xsize_px = xsize_px,
-                                                 cropped_ysize_px = ysize_px,
-                                                 )
+        i_top, i_bottom, i_left, i_right = self.large_tile.get_cropping_indices_for_straight_enwrapping_of_rot_tile( center_lat_deg=center_lat_deg, center_lon_deg=center_lon_deg, cropped_xsize_px=xsize_px, cropped_ysize_px=ysize_px, angle_rad=angle_rad)
+
+        cropping_indices_would_be_sane = self.large_tile.check_sanity_of_cropping_indices(i_top, i_bottom, i_left, i_right)
 
         large_tile_can_be_used = ( self.current_zoom == self.large_tile.zoom and cropping_indices_would_be_sane )
 
         # if large tile is unsuitable, make a new one
         if not large_tile_can_be_used:
+            siz = 2 * max(xsize_px, ysize_px)
             self.large_tile = self.get_large_tile( lat_deg  = center_lat_deg, 
                                                    lon_deg  = center_lon_deg, 
                                                    zoom     = self.current_zoom, 
-                                                   xsize_px = 1.4 * xsize_px, 
-                                                   ysize_px = 1.4 * ysize_px 
+                                                   xsize_px = siz, 
+                                                   ysize_px = siz 
                                                   )
 
-        # now we can be sure that large tile fits the requested region, so let'scrop
-        cropped_tile = self.large_tile.get_cropped_tile_by_angles(center_lat_deg   = center_lat_deg, 
+        # now we can be sure that large tile fits the requested region, so let's crop
+        if angle_rad == 0:
+            cropped_tile = self.large_tile.get_cropped_tile_by_angles(
+                                             center_lat_deg   = center_lat_deg, 
                                              center_lon_deg   = center_lon_deg, 
                                              cropped_xsize_px = xsize_px,
-                                             cropped_ysize_px = ysize_px
+                                             cropped_ysize_px = ysize_px,
+                                             )
+        else:
+            cropped_tile = self.large_tile.get_rotated_cropped_tile_by_angles(
+                                             center_lat_deg   = center_lat_deg, 
+                                             center_lon_deg   = center_lon_deg, 
+                                             cropped_xsize_px = xsize_px,
+                                             cropped_ysize_px = ysize_px,
+                                             angle_rad        = angle_rad
                                              )
         
         return cropped_tile

@@ -4,11 +4,12 @@
 This file contains the Tile class.
 """
 import numpy as np
+from PIL import Image
 
 class RasterTile(object):
     def __init__(self, 
                  zoom,
-                 raster_image   = np.array([[[0,0,0]]]),
+                 raster_image   = np.array([[[0,0,0],[0,0,0]],[[0,0,0],[0,0,0]]]),
                  angular_extent = {"north_lat": 1E-9, 
                                    "south_lat": 0, 
                                    "east_lon":  0,
@@ -113,6 +114,41 @@ class RasterTile(object):
         
         return i_top, i_bottom, i_left, i_right
 
+    def get_cropping_indices_for_straight_enwrapping_of_rot_tile(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px, angle_rad):
+        """
+        @brief: get pixel coordinates of a straight tile that completely enwraps a tilted tile.
+        
+        No sanity check is performed.
+        The indices returned may be outside the tile.
+        
+        @param center_lat_deg (float)
+        @param center_lon_deg (float)
+        @param cropped_xsize_px (int) size of tilted tile
+        @param cropped_ysize_px (int) size of tilted tile
+        @param angle_rad (float)
+        
+        @return i_top    (int)
+        @return i_bottom (int)
+        @return i_left   (int)
+        @return i_right  (int)
+        
+        """
+        
+        iy_center, ix_center = self.angles_to_pxpos( lat_deg = center_lat_deg, lon_deg = center_lon_deg )    
+
+        dx_final = cropped_xsize_px * np.array([0.5, 0.5,-0.5,-0.5])
+        dy_final = cropped_ysize_px * np.array([0.5,-0.5, 0.5,-0.5])
+        
+        dx_enwrap =  dx_final * np.cos(angle_rad) + dy_final * np.sin(angle_rad)
+        dy_enwrap = -dx_final * np.sin(angle_rad) + dy_final * np.cos(angle_rad)
+                   
+        i_left   = int( np.floor( ix_center + min(dx_enwrap) ) )
+        i_right  = int( np.ceil ( ix_center + max(dx_enwrap) ) )
+        i_top    = int( np.floor( iy_center + min(dy_enwrap) ) )
+        i_bottom = int( np.ceil ( iy_center + max(dy_enwrap) ) )
+                
+        return i_top, i_bottom, i_left, i_right
+
     def check_sanity_of_cropping_indices(self, i_top, i_bottom, i_left, i_right):
         """
         @brief: Is it possible to crop without "out of bounds" errors ?
@@ -132,11 +168,6 @@ class RasterTile(object):
                     and i_left   <  i_right
                    )
         return is_sane
-    
-    def check_sanity_of_cropping_angles(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px):
-        i_top, i_bottom, i_left, i_right = self.get_cropping_indices( center_lat_deg   = center_lat_deg, center_lon_deg   = center_lon_deg, cropped_xsize_px = cropped_xsize_px, cropped_ysize_px = cropped_ysize_px )
-        is_sane                          = self.check_sanity_of_cropping_indices( i_top, i_bottom, i_left, i_right)
-        return is_sane
  
     def get_cropped_tile_by_indices(self, i_top, i_bottom, i_left, i_right):
         if not self.check_sanity_of_cropping_indices(i_top, i_bottom, i_left, i_right):
@@ -155,4 +186,65 @@ class RasterTile(object):
         i_top, i_bottom, i_left, i_right = self.get_cropping_indices( center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px)
         cropped_tile = self.get_cropped_tile_by_indices( i_top=i_top, i_bottom=i_bottom, i_left=i_left, i_right=i_right)
         return cropped_tile
+
+    def get_rotated_cropped_tile_by_angles(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px, angle_rad):
+
+        i_top, i_bottom, i_left, i_right = self.get_cropping_indices_for_straight_enwrapping_of_rot_tile( center_lat_deg=center_lat_deg, center_lon_deg=center_lon_deg, cropped_xsize_px=cropped_xsize_px, cropped_ysize_px=cropped_ysize_px, angle_rad=angle_rad)
         
+        if not self.check_sanity_of_cropping_indices(i_top, i_bottom, i_left, i_right):
+            raise Exception("Cropping indices are corrupt.")
+
+        pre_cropped_im = self.raster_image[i_top:i_bottom,i_left:i_right]
+        north_lat, west_lon = self.pxpos_to_angles(iy=i_top,    ix=i_left )
+        south_lat, east_lon = self.pxpos_to_angles(iy=i_bottom, ix=i_right)
+
+        rotated_im = np.array(Image.fromarray( np.uint8(pre_cropped_im) ).rotate(angle_rad*180/np.pi) )
+
+        i_top_final    = int( 0.5 * ( i_bottom - i_top) - 0.5 * cropped_ysize_px )
+        i_left_final   = int( 0.5 * ( i_right - i_left) - 0.5 * cropped_xsize_px )
+        final_im = rotated_im[i_top_final:(i_top_final+cropped_ysize_px),i_left_final:(i_left_final+cropped_xsize_px)]
+
+        cropped_tile = RotatedRasterTile( zoom    = self.zoom, 
+                                   raster_image   = final_im,
+                                   angular_extent = {"north_lat": north_lat, "south_lat": south_lat, "east_lon":  east_lon, "west_lon":  west_lon },
+                                   north_bearing_deg = angle_rad * 180 / np.pi
+                                 )
+        return cropped_tile
+
+
+class RotatedRasterTile(RasterTile):
+    def __init__(self, 
+                 zoom,
+                 raster_image   = np.array([[[0,0,0],[0,0,0]],[[0,0,0],[0,0,0]]]),
+                 angular_extent = {"north_lat": 1E-9, 
+                                   "south_lat": 0, 
+                                   "east_lon":  0,
+                                   "west_lon":  1E-9
+                                  },
+                 north_bearing_deg = 0
+                 ):
+        RasterTile.__init__(self, zoom = zoom, raster_image = raster_image, angular_extent = angular_extent )
+        #TODO: correct         self.scale_in_m_per_px
+        self.north_bearing_deg = north_bearing_deg
+   
+    def angles_to_pxpos(self, lat_deg, lon_deg):
+        raise NotImplementedError()
+        return iy, ix
+
+    def pxpos_to_angles(self, iy, ix):
+        raise NotImplementedError()
+
+    def get_cropping_indices(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px):
+        raise NotImplementedError()
+
+    def check_sanity_of_cropping_indices(self, i_top, i_bottom, i_left, i_right):
+        raise NotImplementedError()
+    
+    def check_sanity_of_cropping_angles(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px):
+        raise NotImplementedError()
+ 
+    def get_cropped_tile_by_indices(self, i_top, i_bottom, i_left, i_right):
+        raise NotImplementedError()
+
+    def get_cropped_tile_by_angles(self, center_lat_deg, center_lon_deg, cropped_xsize_px, cropped_ysize_px):
+        raise NotImplementedError()

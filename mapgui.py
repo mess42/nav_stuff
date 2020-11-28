@@ -333,9 +333,7 @@ class MapWindow(Gtk.Window):
         self.make_message_button(layer = self.interactive_layer, label = "Waiting for route calculation ...")
                 
         self.providers["router"].set_route(waypoints = np.array([ [self.providers["position"].longitude, self.providers["position"].latitude],[float(button.result["lon"]), float(button.result["lat"])] ]))
-        
-        self.providers["router"].get_foo() #TODO: remove this line
-        
+               
         polylines = []
         whole_route_line = self.providers["router"].get_polyline_of_whole_route()
         whole_route_line["color_rgba"] = (0,0,1,.5)
@@ -363,11 +361,12 @@ class MapWindow(Gtk.Window):
         map_width = window_size[0]
         map_height = window_size[1] - sum_of_all_widget_heights_except_map_canvas
 
-        cropped_tile = self.providers["map"].get_cropped_tile( 
+        cropped_tile = self.providers["map"].get_rotated_cropped_tile( 
                                     xsize_px = map_width, 
                                     ysize_px = map_height, 
                                     center_lat_deg = self.providers["position"].latitude, 
-                                    center_lon_deg = self.providers["position"].longitude
+                                    center_lon_deg = self.providers["position"].longitude,
+                                    angle_rad = 0
                                     )
         self.map_layer.update(cropped_tile)
         self.marker_layer.update(cropped_tile = cropped_tile, position = self.providers["position"] )
