@@ -3,7 +3,7 @@
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, Gdk, GLib
 
 import os
 import json
@@ -16,6 +16,7 @@ import providers.route
 import widgets.marker_layer
 import widgets.map_layer
 import widgets.buttons
+import widgets.da_buttons
 import calc.angles
 
 class MapWindow(Gtk.Window):
@@ -37,6 +38,7 @@ class MapWindow(Gtk.Window):
         else:
             self.settings = self.get_new_settings_dict(profiles=self.profiles)
             self.settings_have_changed = True
+        self.auto_rotate = True
 
         # providers for map, position, search, and routing
         self.providers = {}
@@ -201,19 +203,24 @@ class MapWindow(Gtk.Window):
     def make_nav_buttons(self, layer):
         
         self.remove_all_children( layer )
+        layer.set_row_spacing(10)
 
         size = Gtk.icon_size_from_name("Button")
-        zoom_in_button = Gtk.Button.new_from_icon_name(Gtk.STOCK_ZOOM_IN, size )
-        zoom_in_button.connect("clicked", self.on_zoom_in_button_clicked)
-        layer.attach( child = zoom_in_button, left=0, top=0, width=1, height=1)
+        zoom_in = widgets.da_buttons.ZoomIn(size=32)
+        zoom_in.connect("button-press-event", self.on_zoom_in_clicked)
+        layer.attach( child = zoom_in, left=0, top=0, width=1, height=1)
 
-        zoom_out_button = Gtk.Button.new_from_icon_name(Gtk.STOCK_ZOOM_OUT, size )  
-        zoom_out_button.connect("clicked", self.on_zoom_out_button_clicked)
-        layer.attach( child = zoom_out_button, left=0, top=1, width=1, height=1)
+        zoom_out = widgets.da_buttons.ZoomOut(size=32)
+        zoom_out.connect("button-press-event", self.on_zoom_out_clicked)
+        layer.attach( child = zoom_out, left=0, top=1, width=1, height=1)
         
-        settings_button = Gtk.Button.new_from_icon_name(Gtk.STOCK_EXECUTE, size )        
-        settings_button.connect("clicked", self.on_settings_button_clicked)
-        layer.attach( child = settings_button, left=0, top=3, width=1, height=1)
+        settings = widgets.da_buttons.Settings(size=32)       
+        settings.connect("button-press-event", self.on_settings_clicked)
+        layer.attach( child = settings, left=0, top=2, width=1, height=1)
+
+        north_arrow = widgets.da_buttons.NorthArrow(size=32)
+        north_arrow.connect("button-press-event", self.on_north_arrow_clicked)
+        layer.attach( child = north_arrow, left=0, top=3, width=1, height=1)
         
         layer.show_all()
 
@@ -229,7 +236,8 @@ class MapWindow(Gtk.Window):
     def make_search_result_buttons(self, layer, list_of_result_dicts):
         # remove zoom controls or results from previus search
         self.remove_all_children( layer )
-        
+        layer.set_row_spacing(0)
+
         if len(list_of_result_dicts) == 0:
             button = Gtk.Button.new_with_label("no results found.")
             button.connect("clicked", self.from_no_result_to_nav_buttons)
@@ -238,7 +246,6 @@ class MapWindow(Gtk.Window):
             # show "no result" only for a short time and auto-return to nav buttons
             GLib.timeout_add( 3000, self.from_no_result_to_nav_buttons, None)
 
-            
         else:  
             # make a Button for each result
             for i in range(len(list_of_result_dicts)):
@@ -253,7 +260,8 @@ class MapWindow(Gtk.Window):
 
     def make_settings_menu(self, layer):
         self.remove_all_children( layer )
- 
+        layer.set_row_spacing(0)
+
         dropdown_menus = {}
     
         provider_types = list( self.profiles.keys() )
@@ -288,9 +296,9 @@ class MapWindow(Gtk.Window):
         layer.attach(child = apply_button, left=1, top=0, width=1, height=1)
 
         layer.show_all()
-
+      
     
-    def on_settings_button_clicked(self, button):
+    def on_settings_clicked(self, button, event):
         self.make_settings_menu( layer = self.interactive_layer )
         
         
@@ -348,6 +356,11 @@ class MapWindow(Gtk.Window):
         self.make_nav_buttons( layer = self.interactive_layer )        
         self.entry.set_text(button.result["display_name"])
 
+
+    def on_north_arrow_clicked(self, da, event):
+        # toggle auto-rotate
+        self.auto_rotate = not self.auto_rotate
+
                   
     def on_timeout(self, data):
         self.providers["position"].update_position()
@@ -361,12 +374,13 @@ class MapWindow(Gtk.Window):
         map_width = window_size[0]
         map_height = window_size[1] - sum_of_all_widget_heights_except_map_canvas
 
+        angle_rad = self.providers["position"].heading * np.pi / 180. * self.auto_rotate
         cropped_tile = self.providers["map"].get_rotated_cropped_tile( 
                                     xsize_px = map_width, 
                                     ysize_px = map_height, 
                                     center_lat_deg = self.providers["position"].latitude, 
                                     center_lon_deg = self.providers["position"].longitude,
-                                    angle_rad = self.providers["position"].heading * np.pi / 180.
+                                    angle_rad = angle_rad
                                     )
         self.map_layer.update(cropped_tile)
         self.marker_layer.update(cropped_tile = cropped_tile, position = self.providers["position"] )
@@ -374,10 +388,10 @@ class MapWindow(Gtk.Window):
         repeat = True
         return repeat
     
-    def on_zoom_in_button_clicked(self, button):
+    def on_zoom_in_clicked(self, button, event):
         self.providers["map"].zoom_in()
 
-    def on_zoom_out_button_clicked(self, button):
+    def on_zoom_out_clicked(self, button,event):
         self.providers["map"].zoom_out()
     
     def on_destroy(self, object_to_destroy):
