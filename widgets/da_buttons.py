@@ -21,37 +21,40 @@ class DrawingAreaButton(Gtk.DrawingArea):
         
                
 class NorthArrow(DrawingAreaButton):
-    def __init__(self, size=32):
+    def __init__(self, north_bearing_deg = 0, size=32):
         DrawingAreaButton.__init__(self, size=size)
         
         self.size=size
+        self.update( north_bearing_deg=north_bearing_deg )
         
-        # left half
-        self.xl  = size * np.array([.5,.5, .2,.5])
-        self.yl  = size * np.array([ 0,.8,.95, 0])
-        
-        # right half
-        self.xr  = size * np.array([.5, .8,.5,.5])
-        self.yr  = size * np.array([ 0,.95,.8, 0])
+    def update(self, north_bearing_deg):
+        bear_rad = north_bearing_deg * np.pi/180.
+
+        # right half        
+        dxr = np.array([   0, .3, 0,   0])
+        dyr = np.array([ -.45,.4,.3, -.45])        
+        self.xr  = self.size * (dxr*np.cos(bear_rad) - dyr*np.sin(bear_rad) + .5)
+        self.yr  = self.size * (dxr*np.sin(bear_rad) + dyr*np.cos(bear_rad) + .5)
         
         # total outline
-        self.x  = size * np.array([.5, .8,.5, .2,.5])
-        self.y  = size * np.array([ 0,.95,.8,.95, 0])
+        dx = np.array([   0, .3, 0, -.3,   0])
+        dy = np.array([ -.45,.4,.3, .4, -.45])
+        self.x  = self.size * (dx*np.cos(bear_rad) - dy*np.sin(bear_rad) + .5)
+        self.y  = self.size * (dx*np.sin(bear_rad) + dy*np.cos(bear_rad) + .5)
         
     def on_draw(self, da, ctx):
         ctx.set_source_rgba(1,1,1,.7)
         ctx.rectangle(0,0,self.size,self.size)
         ctx.fill()
 
+        self.polygon(ctx, self.x, self.y)
         ctx.set_source_rgb(1,1,1)
-        self.polygon(ctx, self.xl, self.yl)
-        ctx.fill()
-        
-        ctx.set_source_rgb(0,0,0)
+        ctx.fill_preserve()
+        ctx.set_source_rgb(0,0,0)        
+        ctx.stroke()
         self.polygon(ctx, self.xr, self.yr)
         ctx.fill()
-        self.polygon(ctx, self.x, self.y)
-        ctx.stroke()
+
 
 
 class ZoomOut(DrawingAreaButton):

@@ -205,7 +205,6 @@ class MapWindow(Gtk.Window):
         self.remove_all_children( layer )
         layer.set_row_spacing(10)
 
-        size = Gtk.icon_size_from_name("Button")
         zoom_in = widgets.da_buttons.ZoomIn(size=32)
         zoom_in.connect("button-press-event", self.on_zoom_in_clicked)
         layer.attach( child = zoom_in, left=0, top=0, width=1, height=1)
@@ -218,9 +217,9 @@ class MapWindow(Gtk.Window):
         settings.connect("button-press-event", self.on_settings_clicked)
         layer.attach( child = settings, left=0, top=2, width=1, height=1)
 
-        north_arrow = widgets.da_buttons.NorthArrow(size=32)
-        north_arrow.connect("button-press-event", self.on_north_arrow_clicked)
-        layer.attach( child = north_arrow, left=0, top=3, width=1, height=1)
+        self.north_arrow = widgets.da_buttons.NorthArrow(size=32)
+        self.north_arrow.connect("button-press-event", self.on_north_arrow_clicked)
+        layer.attach( child = self.north_arrow, left=0, top=3, width=1, height=1)
         
         layer.show_all()
 
@@ -384,6 +383,7 @@ class MapWindow(Gtk.Window):
                                     )
         self.map_layer.update(cropped_tile)
         self.marker_layer.update(cropped_tile = cropped_tile, position = self.providers["position"] )
+        self.north_arrow.update(north_bearing_deg = angle_rad * -180/np.pi)
         
         repeat = True
         return repeat
