@@ -4,7 +4,7 @@
 import numpy as np
 
 import providers.download_helpers
-#import calc.angles
+import calc.angles
 
 
 def get_mapping_of_names_to_classes():
@@ -22,11 +22,11 @@ def get_mapping_of_names_to_classes():
 def ordinal(n):
     nth = ""
     if n == 1:
-        nth = "1st"
+        nth = "first"
     elif n == 2:
-        nth == "2nd"
+        nth = "second"
     elif n == 3:
-        nth = "3rd"
+        nth = "third"
     else:
         nth = str(n) + "th"
     # there shouldn't be a roundabout with more than 20 exits
@@ -87,6 +87,25 @@ class OSRM(Router):
         
         self.route = d["routes"][0]
         
+        # Dirty routing test
+        last_dist = 0
+        for leg in self.route["legs"]:
+            for step in leg["steps"]:
+                blocks = self.__step_to_text_blocks( step, distance_in_m = last_dist)
+                last_dist = step["distance"]
+                
+                msg  = blocks["distance_preposition"]
+                msg += blocks["distance"]
+                msg += blocks["distance_unit_abbrev"]
+                msg += blocks["verb"]
+                msg += blocks["verb_modifier"]
+                msg += blocks["to_preposition"]
+                msg += blocks["new_name"]
+                
+                print(msg)
+        # end of dirty routing test
+        
+        
     def get_polyline_of_whole_route(self):
 
         lat_deg = []
@@ -101,38 +120,81 @@ class OSRM(Router):
         
         return {"lat_deg":lat_deg, "lon_deg":lon_deg}
 
-    def get_foo(self):
-        if "legs" in self.route:
-            for leg in self.route["legs"]:
-                for step in leg["steps"]:
-                    print(step)
-                    print("\n\n")
 
+    def __step_to_text_blocks(self, step, distance_in_m = None):
 
-"""
-    def step_to_text(self, step):
-            
-        osrm_texter = {
-            "arrive"     : "arrive at {name}",
-            "continue"   : "{modifier}. Continue on {name}",
-            "depart"     : "depart {nesw_after} to {name}",
-            "end of road": "{modifier}. To {name}",
-            "exit rotary": "{exit_number} exit. To {name}",
-            "new name"   : "{modifier}. Continue to {name}",
-            "turn"       : "{modifier}. To {name}",
+        verbs = {
+            "arrive"     : "arrive ",
+            "continue"   : "continue ",
+            "depart"     : "depart ",
+            "end of road": "at the end of the road, turn ",
+            "exit rotary": "take the ",
+            "new name"   : "continue ",
+            "turn"       : "turn ",
+            "fork"       : "fork ",
+            "merge"      : "merge ",
+            "on ramp"    : "take the ramp to the ",
+            "off ramp"   : "take the ramp on the ",
+            "roundabout" : "enter the ",
+            "rotary"     : "enter the ",
+            "roundabout turn" : 	"at the roundabout, turn ",
+            "exit roundabout": "take the ",
             }
-    
+            
+        modifiers = {            
+            "arrive"     : "",
+            "continue"   : "{modifier} ",
+            "depart"     : "{nesw_after} ",
+            "end of road": "{modifier} ",
+            "exit rotary": "{exit_number} exit ",
+            "new name"   : "{modifier} ",
+            "turn"       : "{modifier} ",
+            "fork"       : "{modifier} ",
+            "merge"      : "",
+            "on ramp"    : "{modifier} ",
+            "off ramp"   : "{modifier} to exit ",
+            "roundabout" : "roundabout ",
+            "rotary"     : "rotary ",
+            "roundabout turn" : 	"{modifier} ",
+            "exit roundabout": "{exit_number} exit ",
+            }
         
-        merge 	merge onto a street (e.g. getting on the highway from a ramp, the modifier specifies the direction of the merge )
-        on ramp 	take a ramp to enter a highway (direction given my modifier )
-        off ramp 	take a ramp to exit a highway (direction given my modifier )
-        fork 	take the left/right side at a fork depending on modifier
-        roundabout 	traverse roundabout, if the route leaves the roundabout there will be an additional property exit for exit counting. The modifier specifies the direction of entering the roundabout.
-        rotary 	a traffic circle. While very similar to a larger version of a roundabout, it does not necessarily follow roundabout rules for right of way. It can offer rotary_name and/or rotary_pronunciation parameters (located in the RouteStep object) in addition to the exit parameter (located on the StepManeuver object).
-        roundabout turn 	Describes a turn at a small roundabout that should be treated as normal turn. The modifier indicates the turn direciton. Example instruction: At the roundabout turn left .
-        notification 	not an actual turn but a change in the driving conditions. For example the travel mode or classes. If the road takes a turn itself, the modifier describes the direction
-        exit roundabout 	Describes a maneuver exiting a roundabout (usually preceeded by a roundabout instruction)
-    
+        to_prepositions = {
+            "arrive"     : "at ",
+            "continue"   : "on ",
+            "depart"     : "to ",
+            "end of road": "to ",
+            "exit rotary": "to ",
+            "new name"   : "to ",
+            "turn"       : "to ",
+            "fork"       : "to ",
+            "merge"      : "on ",
+            "on ramp"    : "onto ",
+            "off ramp"   : "to ",
+            "roundabout" : "",
+            "rotary"     : "",
+            "roundabout turn" : 	"to ",
+            "exit roundabout": "to ",
+            }
+        
+        new_names = {
+            "arrive"     : "{name}",
+            "continue"   : "{name}",
+            "depart"     : "{name}",
+            "end of road": "{name}",
+            "exit rotary": "{name}",
+            "new name"   : "{name}",
+            "turn"       : "{name}",
+            "fork"       : "{name}",
+            "merge"      : "{name}",
+            "on ramp"    : "{name}",
+            "off ramp"   : "{name}",
+            "roundabout" : "",
+            "rotary"     : "",
+            "roundabout turn" : 	"{name}",
+            "exit roundabout": "{name}",
+            }
+        
         text_replacement_dict = {
             "{name}"       : step["name"],
             "{modifier}"   : "".join(list(man["modifier"] for man in [step["maneuver"]] if "modifier" in man )),
@@ -140,17 +202,70 @@ class OSRM(Router):
             "{nesw_after}": calc.angles.azimuth_to_nesw_string(step["maneuver"]["bearing_after"])
             }
         
-        if step["maneuver"]["type"] not in osrm_texter:
-            # TODO: implement all maneuver types
-            # TODO: remove this branch once the API is fully implemented, or decide to keep it
-            print("TODO: implement step = ", step)
-            txt = "TODO: implement " + step["maneuver"]["type"]
-        else:            
-            txt = osrm_texter[step["maneuver"]["type"]]
+        typ = step["maneuver"]["type"]
+        if typ not in verbs:
+            print(step)
+            raise Exception( "TODO: implement " + step["maneuver"]["type"] )
+
+        blocks = {"distance_preposition": "",
+                  "distance": "",
+                  "distance_unit": "",
+                  "distance_unit_abbrev": "",
+                  "verb": verbs[typ],
+                  "verb_modifier": modifiers[typ],
+                  "to_preposition": to_prepositions[typ],
+                  "new_name": new_names[typ]
+                 }
+                  
+        if distance_in_m is not None and typ not in ["exit roundabout", "exit rotary"]:
+            if distance_in_m >= 0:
+                if distance_in_m < 20:
+                    blocks["distance_preposition"] = "now "
+                    blocks["distance"] = ""
+                    blocks["distance_unit"] = ""
+                    blocks["distance_unit_abbrev"] = ""
+                elif distance_in_m < 200:
+                    blocks["distance_preposition"] = "in "
+                    blocks["distance"] = str( int(np.round(distance_in_m,-1)) )
+                    blocks["distance_unit"] = " meters "
+                    blocks["distance_unit_abbrev"] = " m "
+                elif distance_in_m < 1000:
+                    blocks["distance_preposition"] = "in "
+                    blocks["distance"] = str( int(np.round(distance_in_m,-2)) )
+                    blocks["distance_unit"] = " meters "
+                    blocks["distance_unit_abbrev"] = " m "
+                elif distance_in_m < 20000:
+                    blocks["distance_preposition"] = "in "
+                    blocks["distance"] = str( np.round(distance_in_m/1000,1) )
+                    blocks["distance_unit"] = " kilometers "
+                    blocks["distance_unit_abbrev"] = " km "
+                    if blocks["distance"] == 1:
+                        blocks["distance_unit"] = " kilometer "                        
+                elif distance_in_m < 100000:
+                    blocks["distance_preposition"] = "in "
+                    blocks["distance"] = str( int(np.round(distance_in_m/1000)) )
+                    blocks["distance_unit"] = " kilometers "
+                    blocks["distance_unit_abbrev"] = " km "
+                else:
+                    blocks["distance_preposition"] = "in "
+                    blocks["distance"] = str( int(np.round(distance_in_m/1000,-1)) )
+                    blocks["distance_unit"] = " kilometers "
+                    blocks["distance_unit_abbrev"] = " km "
+
+        for block_name in blocks:
             for key in text_replacement_dict:
-                txt = txt.replace( key, text_replacement_dict[key] )        
-        return txt
-"""
+                blocks[block_name] = blocks[block_name].replace( key, text_replacement_dict[key] )        
+        
+        # Corrections
+        if blocks["verb_modifier"] == "uturn":
+            blocks["verb"] = "make a "
+        if blocks["new_name"] == "":
+            blocks["to_preposition"] = ""
+        if blocks["verb"] == "turn " and blocks["verb_modifier"] == "straight":
+            blocks["verb"] = "continue "
+                  
+        return blocks
+
 
 
 
