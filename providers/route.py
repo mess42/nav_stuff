@@ -75,6 +75,10 @@ class Router(object):
         return {"lat_deg":[], "lon_deg":[]}
 
 
+    def get_distances_between_maneuvers(self):
+        return []
+
+
 class OSRM(Router):    
     def set_route(self, waypoints):
 
@@ -86,24 +90,6 @@ class OSRM(Router):
             raise Exception(d["code"])
         
         self.route = d["routes"][0]
-        
-        # Dirty routing test
-        last_dist = 0
-        for leg in self.route["legs"]:
-            for step in leg["steps"]:
-                blocks = self.__step_to_text_blocks( step, distance_in_m = last_dist)
-                last_dist = step["distance"]
-                
-                msg  = blocks["distance_preposition"]
-                msg += blocks["distance"]
-                msg += blocks["distance_unit_abbrev"]
-                msg += blocks["verb"]
-                msg += blocks["verb_modifier"]
-                msg += blocks["to_preposition"]
-                msg += blocks["new_name"]
-                
-                print(msg)
-        # end of dirty routing test
         
         
     def get_polyline_of_whole_route(self):
@@ -119,6 +105,83 @@ class OSRM(Router):
                     lon_deg = np.hstack([lon_deg, coords[:,0]])
         
         return {"lat_deg":lat_deg, "lon_deg":lon_deg}
+
+
+    def get_maneuver_data(self):
+        
+        # First shot: every OSRM step is exactly one maneuver.
+        # TODO: Rotary entry and exit are 2 separate steps. 
+        #       Both, entry and exit, are represented by a 3-way crossing (rotary, rotary, exit).
+        #       Better: combine (all intersections of the entry step) and (the first intersection of the exit step) to one big icon.
+        # TODO: Notifications are a maneuver. Let's check whether this is a good choice in practice.
+        # TODO: use different icon types for roundabouts
+        # TODO: use different icon type for U-Turn
+        
+        icon_types = {"arrive": "arrive",
+            "continue"        : "crossing",
+            "depart"          : "nesw_arrow",
+            "end of road"     : "crossing",
+            "exit rotary"     : "crossing",
+            "new name"        : "crossing",
+            "turn"            : "crossing",
+            "fork"            : "crossing",
+            "merge"           : "crossing",
+            "on ramp"         : "crossing",
+            "off ramp"        : "crossing",
+            "roundabout"      : "crossing",
+            "rotary"          : "crossing",
+            "notification"    : "notification",
+            "roundabout turn" : 	"crossing",
+            "exit roundabout" : "crossing",
+            }
+        
+        maneuvers = []
+        if "legs" in self.route:
+            for leg in self.route["legs"]:
+                for step in leg["steps"]:
+                    geo_before = []
+                    dist_before = 0
+                    if len(maneuvers) != 0:
+                        # the geometry before this maneuver is the geometry after the last one
+                        geo_before  = maneuvers[-1]["geometry_after"]
+                        dist_before = maneuvers[-1]["distance_after"]
+
+                    icon_type = icon_types[ step["maneuver"]["type"] ]
+                    bearings_deg = step["intersections"][0]["bearings"]
+
+                    in_bearing_deg = None
+                    if "in" in step["intersections"][0]:
+                        in_bearing_deg = bearings_deg[ step["intersections"][0]["in"] ]
+
+                    out_bearing_deg = None
+                    if "out" in step["intersections"][0]:
+                        out_bearing_deg = bearings_deg[ step["intersections"][0]["out"] ]
+
+                    maneuver = {
+                        "location"       : step["intersections"][0]["location"],
+                        "bearings_deg"   : bearings_deg,
+                        "in_bearing_deg" : in_bearing_deg,
+                        "out_bearing_deg": out_bearing_deg,
+                        "icon_type"      : icon_type,
+                        "left_driving"   : ( step["driving_side"].upper() == "LEFT" ),
+                        "textblocks"     : self.__step_to_text_blocks(step),
+                        "geometry_before": geo_before,
+                        "geometry_after" : step["geometry"]["coordinates"],
+                        "distance_before": dist_before,
+                        "distance_after" : step["distance"]
+                        }
+                    maneuvers += [ maneuver ]
+
+        return maneuvers
+                    
+    
+    def get_distances_between_maneuvers(self):
+        dists = []
+        if "legs" in self.route:
+            for leg in self.route["legs"]:
+                for step in leg["steps"]:
+                  dists.append( step["distance"] )
+        return dists
 
 
     def __step_to_text_blocks(self, step, distance_in_m = None):
@@ -207,16 +270,15 @@ class OSRM(Router):
             print(step)
             raise Exception( "TODO: implement " + step["maneuver"]["type"] )
 
-        blocks = {"distance_preposition": "",
-                  "distance": "",
-                  "distance_unit": "",
-                  "distance_unit_abbrev": "",
-                  "verb": verbs[typ],
+        blocks = {"verb": verbs[typ],
                   "verb_modifier": modifiers[typ],
                   "to_preposition": to_prepositions[typ],
                   "new_name": new_names[typ]
                  }
-                  
+        
+        """
+        # TODO: move the distance part somewhere else -- out of this method
+        # TODO: rounding distances is implemented multiple times throughout the project. Let's have a common helper function.
         if distance_in_m is not None and typ not in ["exit roundabout", "exit rotary"]:
             if distance_in_m >= 0:
                 if distance_in_m < 20:
@@ -251,22 +313,22 @@ class OSRM(Router):
                     blocks["distance"] = str( int(np.round(distance_in_m/1000,-1)) )
                     blocks["distance_unit"] = " kilometers "
                     blocks["distance_unit_abbrev"] = " km "
-
+        """
+        
         for block_name in blocks:
             for key in text_replacement_dict:
                 blocks[block_name] = blocks[block_name].replace( key, text_replacement_dict[key] )        
         
         # Corrections
-        if blocks["verb_modifier"] == "uturn":
-            blocks["verb"] = "make a "
+        if blocks["verb_modifier"] == "uturn ":
+            blocks["verb"]          = "make a "
+            blocks["verb_modifier"] = "U-turn "
         if blocks["new_name"] == "":
             blocks["to_preposition"] = ""
-        if blocks["verb"] == "turn " and blocks["verb_modifier"] == "straight":
+        if  blocks["verb_modifier"] == "straight ":
             blocks["verb"] = "continue "
                   
         return blocks
-
-
 
 
 if __name__ == "__main__":
