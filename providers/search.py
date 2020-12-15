@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+This file defines search providers.
+A search provider is used to convert a text input to destination coordinates.
+"""
 
 import providers.download_helpers
 import urllib.parse
+
+# TODO: make a new simple provider that accepts coordinate inputs and converts them to float.
 
 def get_mapping_of_names_to_classes():
     """

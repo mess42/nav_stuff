@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Helper routines for server communication
+This file provides helper routines for server communication.
 """
 from PIL import PngImagePlugin
 import numpy as np

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+This file defines route provider.
+A route provider finds a set of roads, leading from a start location to a destination.
+"""
 
 import numpy as np
 
@@ -73,9 +77,8 @@ class Router(object):
 
     def get_polyline_of_whole_route(self):
         return {"lat_deg":[],"lon_deg":[]}
-
-
-    def get_distances_between_maneuvers(self):
+    
+    def get_maneuver_data(self):
         return []
 
 
@@ -174,15 +177,6 @@ class OSRM(Router):
 
         return maneuvers
                     
-    
-    def get_distances_between_maneuvers(self):
-        dists = []
-        if"legs" in self.route:
-            for leg in self.route["legs"]:
-                for step in leg["steps"]:
-                  dists.append( step["distance"] )
-        return dists
-
 
     def __step_to_text_blocks(self, step, distance_in_m = None):
 

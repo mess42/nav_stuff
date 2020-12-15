@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-
+This file defines position providers.
+A position provider delivers the current position and handles sensor communication.
 """
 
 import gi

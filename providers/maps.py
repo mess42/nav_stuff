@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Python
+This file provides the map class.
+The map is used create rendered images of a given cartogrpahic region.
+At he moment, it contains 2D maps only.
+In the future it could also contain a renderer of vector maps or 3D views.
 """
 import hashlib
 
@@ -56,6 +59,9 @@ class SlippyMap(object):
         return url
         
     def deg2num(self, lat_deg, lon_deg, zoom):
+        """
+        https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Python
+        """
         lat_rad = lat_deg * pi / 180.
         n = 2.0 ** zoom
         xtile = int((lon_deg + 180.0) / 360.0 * n)
@@ -63,7 +69,10 @@ class SlippyMap(object):
         return (xtile, ytile)
     
     def num2deg(self, xtile, ytile, zoom):
-    # This returns the NW-corner of the square. Use the function with xtile+1 and/or ytile+1 to get the other corners. With xtile+0.5 & ytile+0.5 it will return the center of the tile. 
+        """
+        This returns the NW-corner of the square. Use the function with xtile+1 and/or ytile+1 to get the other corners. With xtile+0.5 & ytile+0.5 it will return the center of the tile. 
+        https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Python
+        """
         n = 2.0 ** zoom
         lon_deg = xtile / n * 360.0 - 180.0
         lat_rad = np.arctan(np.sinh(np.pi * (1 - 2 * ytile / n)))

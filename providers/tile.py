@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This file contains the Tile class.
+A tile is a small section of a map.
 """
 import numpy as np
 from PIL import Image
