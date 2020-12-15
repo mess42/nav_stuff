@@ -18,6 +18,7 @@ import widgets.map_layer
 import widgets.buttons
 import widgets.da_buttons
 import calc.angles
+import calc.round
 
 class MapWindow(Gtk.Window):
     def __init__(self, 
@@ -170,16 +171,9 @@ class MapWindow(Gtk.Window):
                          lat2_deg = float(res["lat"]),
                          lon2_deg = float(res["lon"])
                          )
-            res["rounded_distance_km"] = airline["distance_m"] / 1000
-            if airline["distance_m"] < 10000:
-                res["rounded_distance_km"] = np.round( res["rounded_distance_km"], 1)
-            elif airline["distance_m"] < 100000:
-                res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"] ))
-            elif airline["distance_m"] < 1000000:
-                res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"], -1))
-            else:
-                res["rounded_distance_km"] = int(np.round( res["rounded_distance_km"], -2))
-            
+            blocks = calc.round.distance_to_rounded_textblocks(airline["distance_m"])
+            res["rounded_distance_str"] = blocks["distance"] + " " + blocks["distance_unit_abbrev"]
+                        
             res["azimuth_deg"] = airline["azimuth_from_point_1_towards_2_deg"]
             res["nesw"]        = calc.angles.azimuth_to_nesw_string(azim_deg = airline["azimuth_from_point_1_towards_2_deg"])
 
@@ -249,7 +243,7 @@ class MapWindow(Gtk.Window):
             # make a Button for each result
             for i in range(len(list_of_result_dicts)):
                 res = list_of_result_dicts[i]
-                label = str(res["display_name"]) + "\n" + str(res["rounded_distance_km"]) + " km " + res["nesw"] + " (air line)"
+                label = str(res["display_name"]) + "\n" + str(res["rounded_distance_str"]) + " " + res["nesw"] + " (air line)"
                 button = widgets.buttons.ResultButton( label = label, result = res )
                 button.connect("clicked", self.on_search_result_clicked)
                 layer.attach( child=button, left=0, top=i, width=1, height=1)

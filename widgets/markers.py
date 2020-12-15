@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import calc.round
 
 class Marker(object):
     def __init__(self, draftsman, **params):
@@ -381,6 +382,7 @@ class ArrowWithOffsetLabel(Draftsman):
 
             offset_m = np.sqrt(dx_m**2+dy_m**2)
 
+            # TODO: find a shorter more elegant code with less if-statements
             if   heading_deg_plus_beta > 0            and heading_deg_plus_beta <= 2*beta:
                 #north
                 dx = -self.text.width * heading_deg_plus_beta / (2*beta)
@@ -417,7 +419,8 @@ class ArrowWithOffsetLabel(Draftsman):
             xtext = x + dx - np.sin(heading_rad) * (self.arrow_length + 5)
             ytext = y + dy + np.cos(heading_rad) * (self.arrow_length + 5)
 
-            self.text.label = str( np.round(offset_m/1000, 1) ) + " km"
+            blocks = calc.round.distance_to_rounded_textblocks( distance_in_m = offset_m )
+            self.text.label = blocks["distance"] + " " + blocks["distance_unit_abbrev"]
             self.text.draw(ctx, xtext, ytext, heading_rad)
             
 
