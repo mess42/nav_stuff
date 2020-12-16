@@ -102,6 +102,7 @@ class SlippyMap(object):
         arr = download_helpers.remote_png_to_numpy(url = url)
         ysize, xsize, c = np.shape(arr)
         
+        print( "downloading", url )
         slippy_tile = tile.RasterTile( raster_image   = arr ,
                                        angular_extent = {"north_lat": north_lat, "east_lon":  east_lon, "south_lat": south_lat, "west_lon":  west_lon },
                                        zoom           = zoom
@@ -190,9 +191,12 @@ class SlippyMap(object):
         image_large = np.zeros( (ysize_large, xsize_large,3) ,dtype=int)
         for ix in np.arange(2*dx+1)-dx:
             for iy in np.arange(2*dy+1)-dy:
-
-                current_tile = self.get_slippy_tile(x = x_center+ix, y = y_center+iy, zoom=zoom )
-                                
+                try:
+                    current_tile = self.get_slippy_tile(x = x_center+ix, y = y_center+iy, zoom=zoom )
+                except:
+                    current_tile = np.zeros_like(center_tile)
+                    print("Download failed. Drawing black tile.")
+                    
                 x0 = (ix+dx)   * xsize_singletile
                 x1 = (ix+dx+1) * xsize_singletile
                 y0 = (iy+dy)   * ysize_singletile

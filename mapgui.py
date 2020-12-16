@@ -68,6 +68,7 @@ class MapWindow(Gtk.Window):
         #self.entry.set_text("Hello World")
         self.entry.connect("activate", self.on_search_activated)
         
+        # Create the top search bar
         size = Gtk.icon_size_from_name("Button")
         search_button = widgets.buttons.SearchButton(entry = self.entry, icon_size=size)
         search_button.connect("clicked", self.on_search_activated)
@@ -95,6 +96,10 @@ class MapWindow(Gtk.Window):
         self.canvas.add_overlay( self.interactive_layer )
         self.make_nav_buttons( layer = self.interactive_layer )
 
+        # Create the bottom maneuver bar.
+        self.maneuver_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.widgets.pack_start(child = self.maneuver_bar, expand=True, fill=True, padding=0)
+        
         self.add(self.widgets)
         self.show_all()
         
@@ -341,6 +346,13 @@ class MapWindow(Gtk.Window):
         self.make_message_button(layer = self.interactive_layer, label = "Waiting for directions calculation ...")
         self.providers["directions"].set_data(maneuvers = self.providers["router"].get_maneuver_data() )
         
+        # manuever bar init
+        self.remove_all_children( self.maneuver_bar )
+        for man in self.providers["directions"].maneuvers[:3]:
+            self.maneuver_bar.add( man["icon_object"] )
+            self.maneuver_bar.set_size_request(360,120) # TODO: hard coded size !!!!
+        self.maneuver_bar.show_all()
+            
         polylines = []
         whole_route_line = self.providers["router"].get_polyline_of_whole_route()
         whole_route_line["color_rgba"] = (0,0,1,.5)
@@ -371,8 +383,8 @@ class MapWindow(Gtk.Window):
         window_size = self.get_size()
         sum_of_all_widget_heights_except_map_canvas = sum( list( w.get_allocation().height for w in self.widgets.get_children() if w is not self.canvas) )
         map_width = window_size[0]
-        map_height = window_size[1] - sum_of_all_widget_heights_except_map_canvas
-
+        map_height = 705 - sum_of_all_widget_heights_except_map_canvas # TODO: hard coded size!!!
+        
         angle_rad = self.providers["position"].heading * np.pi / 180. * self.auto_rotate
         cropped_tile = self.providers["map"].get_rotated_cropped_tile( 
                                     xsize_px = map_width, 

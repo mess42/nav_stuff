@@ -25,6 +25,7 @@ def english_dicts():
     verbs = {
        "arrive"     :"arrive",
        "continue"   :"turn",
+       "straight"   :"continue",
        "depart"     :"depart",
        "end of road":"at the end of the road, turn",
        "exit rotary":"take the",
@@ -43,6 +44,7 @@ def english_dicts():
     modifiers = {            
        "arrive"     :"",
        "continue"   :"{movement_modifier}",
+       "straight"   :"{movement_modifier}",
        "depart"     :"{nesw_after}",
        "end of road":"{movement_modifier}",
        "exit rotary":"{exit_number} exit",
@@ -72,6 +74,7 @@ def english_dicts():
     to_prepositions = {
        "arrive"          : "at",
        "continue"        : "to",
+       "straight"        : "to",
        "depart"          : "to",
        "end of road"     : "to",
        "new name"        : "to",
@@ -90,6 +93,7 @@ def english_dicts():
     street_name_after = {
        "arrive"     :"{street_name_after}",
        "continue"   :"{street_name_after}",
+       "straight"   :"{street_name_after}",
        "depart"     :"{street_name_after}",
        "end of road":"{street_name_after}",
        "exit rotary":"{street_name_after}",
@@ -150,7 +154,7 @@ class Director(object):
               "nesw_arrow"   : widgets.direction_icons.NESWArrow,
               "notification" : widgets.direction_icons.Notification,
             }
-        return d["name"]
+        return d[name]
     
     def maneuver_to_text_blocks(self, maneuver):        
 
@@ -189,6 +193,17 @@ class CarDirector(Director):
         
         for maneuver in self.maneuvers:
             maneuver["text_blocks"] = self.maneuver_to_text_blocks(maneuver)
+            
+            IconClass = self.get_icon_class_by_name( maneuver["icon_type"] )
+            maneuver["icon_object"] = IconClass(in_bearing_deg  = maneuver["in_bearing_deg"], 
+                                                out_bearing_deg = maneuver["out_bearing_deg"], 
+                                                bearings_deg    = maneuver["bearings_deg"], 
+                                                size            = 120, 
+                                                left_driving    = maneuver["left_driving"],
+                                                )
+            
+            # TODO: remove the print section once proper directions are established.            
             s = list( maneuver["text_blocks"][key] for key in maneuver["text_blocks"])
             s = " ".join(s)
             print(s)
+

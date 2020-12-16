@@ -108,6 +108,7 @@ class OSRM(Router):
         
         icon_types = {"arrive":"arrive",
            "continue"        :"crossing",
+           "straight"        :"crossing",
            "depart"          :"nesw_arrow",
            "end of road"     :"crossing",
            "exit rotary"     :"crossing",
