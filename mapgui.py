@@ -336,9 +336,11 @@ class MapWindow(Gtk.Window):
     def on_search_result_clicked(self, button):
         
         self.make_message_button(layer = self.interactive_layer, label = "Waiting for route calculation ...")
-                
         self.providers["router"].set_route(waypoints = np.array([ [self.providers["position"].longitude, self.providers["position"].latitude],[float(button.result["lon"]), float(button.result["lat"])] ]))
-               
+
+        self.make_message_button(layer = self.interactive_layer, label = "Waiting for directions calculation ...")
+        self.providers["directions"].set_data(maneuvers = self.providers["router"].get_maneuver_data() )
+        
         polylines = []
         whole_route_line = self.providers["router"].get_polyline_of_whole_route()
         whole_route_line["color_rgba"] = (0,0,1,.5)
