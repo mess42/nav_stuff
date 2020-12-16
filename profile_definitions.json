@@ -66,5 +66,15 @@
             "class_name": "OSRM",
             "parameters": {"url_template": "https://router.project-osrm.org/route/v1/driving/{waypoints}?steps=true&overview=false&geometries=geojson"}
         }
+    },
+    "directions": {
+        "No Directions": {
+             "class_name": "Director",
+	     "parameters": {}
+        },
+        "Car Directions": {
+             "class_name": "CarDirector",
+	     "parameters": {}
+        }
     }
 }

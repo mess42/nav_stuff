@@ -130,13 +130,17 @@ def english_dicts():
 
 
 class Director(object):
-    def __init__(self, maneuvers, language_dicts = english_dicts() ):
+    def __init__(self, language_dicts = english_dicts() ):
         """
         @param maneuvers (list of dicts)
         @param language_dicts (dict of dicts)
+        
+        # TODO: param language as str. The dicts are created based on that str. The profile definitions can set the language str.
         """
-        self.maneuvers = maneuvers
         self.language_dicts = language_dicts
+    
+    def set_data(self, maneuvers):
+        self.maneuvers = maneuvers
     
     def get_icon_class_by_name(self,name):
         d = { "arrive"       : widgets.direction_icons.CheckerFlag,

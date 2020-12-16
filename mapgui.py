@@ -13,10 +13,13 @@ import providers.maps
 import providers.positions
 import providers.search
 import providers.route
+import providers.directions
+
 import widgets.marker_layer
 import widgets.map_layer
 import widgets.buttons
 import widgets.da_buttons
+
 import calc.angles
 import calc.round
 
@@ -113,7 +116,8 @@ class MapWindow(Gtk.Window):
         p = { "map":      providers.maps.get_mapping_of_names_to_classes(),
               "position": providers.positions.get_mapping_of_names_to_classes(),
               "search":   providers.search.get_mapping_of_names_to_classes(), 
-              "router":   providers.route.get_mapping_of_names_to_classes() 
+              "router":   providers.route.get_mapping_of_names_to_classes(),
+              "directions": providers.directions.get_mapping_of_names_to_classes()
             }
         return p
 
