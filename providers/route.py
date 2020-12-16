@@ -147,15 +147,15 @@ class OSRM(Router):
                 
                     bearings_deg = step["intersections"][0]["bearings"]
 
-                    in_bearing_deg = None
+                    in_bearing_deg = float("nan")
                     if "in" in step["intersections"][0]:
                         in_bearing_deg = bearings_deg[ step["intersections"][0]["in"] ]
 
-                    out_bearing_deg = None
+                    out_bearing_deg = float("nan")
                     if "out" in step["intersections"][0]:
                         out_bearing_deg = bearings_deg[ step["intersections"][0]["out"] ]
 
-                    exit_number = None
+                    exit_number = 0
                     if "exit" in step["maneuver"]:
                         exit_number = step["maneuver"]["exit"]
                     

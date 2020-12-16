@@ -106,6 +106,7 @@ def english_dicts():
         }
     
     ordinals = {
+       0:  "None",
        1:  "first",
        2:  "second",
        3:  "third",
@@ -138,9 +139,10 @@ class Director(object):
         # TODO: param language as str. The dicts are created based on that str. The profile definitions can set the language str.
         """
         self.language_dicts = language_dicts
+        self.maneuvers = []
     
     def set_data(self, maneuvers):
-        self.maneuvers = maneuvers
+        pass # base class does not do anything
     
     def get_icon_class_by_name(self,name):
         d = { "arrive"       : widgets.direction_icons.CheckerFlag,
@@ -165,7 +167,7 @@ class Director(object):
            "{street_name_after}": maneuver["street_name_after"],
            "{movement_modifier}": "{" + maneuver["movement_modifier"] +"}",
            "{exit_number}"      : self.language_dicts["ordinals"][maneuver["exit_number"]],
-           "{nesw_after}"       : calc.angles.azimuth_to_nesw_string( azim_deg = maneuver["bearing_after_deg"] )
+           "{nesw_after}"       : calc.angles.azimuth_to_nesw_string( azim_deg = maneuver["out_bearing_deg"] )
             }
         for key in self.language_dicts["modifiers2"]:
             text_replacement_dict["{"+ key + "}"] = self.language_dicts["modifiers2"][key]
@@ -182,4 +184,11 @@ class Director(object):
 
 
 class CarDirector(Director):
-    pass
+    def set_data(self, maneuvers):
+        self.maneuvers = maneuvers
+        
+        for maneuver in self.maneuvers:
+            maneuver["text_blocks"] = self.maneuver_to_text_blocks(maneuver)
+            s = list( maneuver["text_blocks"][key] for key in maneuver["text_blocks"])
+            s = " ".join(s)
+            print(s)
