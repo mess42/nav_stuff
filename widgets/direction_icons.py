@@ -7,11 +7,11 @@ import numpy as np
 from widgets.da_buttons import DrawingAreaButton
 
 class DirectionIcon(DrawingAreaButton):
-    def __init__(self, in_bearing_deg=0, out_bearing_deg=0, bearings_deg=[], size=32, left_driving=False):
-        pass
-    
+    def __init__(self, in_bearing_deg=0, out_bearing_deg=0, bearings_deg=[], size=0, left_driving=False):
+        DrawingAreaButton.__init__(self, size=size)
+
     def on_draw(self, da, ctx):
-        raise NotImplementedError("This is a base class.")
+        pass
     
     def make_street_polygon(self, bearings_rad, size):
         N = len(bearings_rad)

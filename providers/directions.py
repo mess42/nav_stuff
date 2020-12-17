@@ -4,6 +4,9 @@
 This file defines direction providers.
 A direction provider converts a route to message signs and speech.
 """
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, Gdk, GLib
 
 import calc.angles
 import widgets.direction_icons
@@ -123,7 +126,8 @@ def english_dicts():
        10: "10th"
        }
     
-    dicts = { "verbs"            : verbs, 
+    dicts = { "distance_preposition": "in",
+              "verbs"            : verbs, 
               "modifiers"        : modifiers, 
               "modifiers2"       : modifiers2,
               "to_prepositions"  : to_prepositions, 
@@ -144,6 +148,7 @@ class Director(object):
         """
         self.language_dicts = language_dicts
         self.maneuvers = []
+        self.i_current_maneuver = 0
     
     def set_data(self, maneuvers):
         pass # base class does not do anything
@@ -160,10 +165,11 @@ class Director(object):
 
         # get the first draft        
         typ = maneuver["type"]
-        blocks = {"verb": self.language_dicts["verbs"][typ],
-                 "verb_modifier": self.language_dicts["modifiers"][typ],
-                 "to_preposition": self.language_dicts["to_prepositions"][typ],
-                 "street_name_after": self.language_dicts["street_name_after"][typ]
+        blocks = {"distance_preposition": self.language_dicts["distance_preposition"],
+                  "verb": self.language_dicts["verbs"][typ],
+                  "verb_modifier": self.language_dicts["modifiers"][typ],
+                  "to_preposition": self.language_dicts["to_prepositions"][typ],
+                  "street_name_after": self.language_dicts["street_name_after"][typ]
                  }
 
         # replace {variables} by maneuver data
@@ -185,25 +191,34 @@ class Director(object):
             blocks["to_preposition"] = ""
     
         return blocks
+    
+    def new_maneuver_widget(self, i_maneuver, size_px):
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        if (i_maneuver >= 0 and i_maneuver < len(self.maneuvers)):
+            maneuver = self.maneuvers[i_maneuver]
+            text_blocks = self.maneuver_to_text_blocks(maneuver)
+            
+            top_label = Gtk.Label("in some distance")
+
+            IconClass = self.get_icon_class_by_name( maneuver["icon_type"] )
+            icon = IconClass(in_bearing_deg  = maneuver["in_bearing_deg"], 
+                                                out_bearing_deg = maneuver["out_bearing_deg"], 
+                                                bearings_deg    = maneuver["bearings_deg"], 
+                                                size            = size_px, 
+                                                left_driving    = maneuver["left_driving"],
+                                                )
+            bot_txt = text_blocks["to_preposition"] + " " + text_blocks["street_name_after"]
+            bot_label = Gtk.Label(bot_txt)
+            bot_label.set_line_wrap(True) 
+            
+            vbox.add(top_label)
+            vbox.add(icon)
+            vbox.add(bot_label)
+        return vbox
 
 
 class CarDirector(Director):
     def set_data(self, maneuvers):
         self.maneuvers = maneuvers
-        
-        for maneuver in self.maneuvers:
-            maneuver["text_blocks"] = self.maneuver_to_text_blocks(maneuver)
-            
-            IconClass = self.get_icon_class_by_name( maneuver["icon_type"] )
-            maneuver["icon_object"] = IconClass(in_bearing_deg  = maneuver["in_bearing_deg"], 
-                                                out_bearing_deg = maneuver["out_bearing_deg"], 
-                                                bearings_deg    = maneuver["bearings_deg"], 
-                                                size            = 120, 
-                                                left_driving    = maneuver["left_driving"],
-                                                )
-            
-            # TODO: remove the print section once proper directions are established.            
-            s = list( maneuver["text_blocks"][key] for key in maneuver["text_blocks"])
-            s = " ".join(s)
-            print(s)
+        self.i_current_maneuver = 0
 
