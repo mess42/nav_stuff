@@ -13,6 +13,8 @@ import numpy as np
 import serial
 import datetime
 
+import calc.angles
+
 def get_mapping_of_names_to_classes():
     """
     @brief: Pointers to all classes that shall be usable.
@@ -169,6 +171,32 @@ class PositionGeoClue(PositionProvider):
 
     
 class PositionSimulation(PositionProvider):
+    def __init__(self, **params ):
+        
+        self.velocity = 10 # m/s
+        
+        import json
+        from scipy.interpolate import interp1d
+        f = open("providers/position_simulation_data.json","r")
+        dic = json.load(f)
+        f.close()
+                
+        self.__path_lat_deg = np.array(dic["lat_deg"])
+        self.__path_lon_deg = np.array(dic["lon_deg"])
+        delta_in_m = calc.angles.haversine_distance(lat1_deg = self.__path_lat_deg[1:], 
+                                                    lon1_deg = self.__path_lon_deg[1:], 
+                                                    lat2_deg = self.__path_lat_deg[:-1], 
+                                                    lon2_deg = self.__path_lon_deg[:-1],
+                                                   )
+        covered_dist_in_m = np.cumsum(delta_in_m)
+        start_time = datetime.datetime.now().timestamp()
+        self.__path_time = start_time + np.hstack([[0],covered_dist_in_m]) / self.velocity
+        
+        self.lat_interpolator = interp1d(self.__path_time, self.__path_lat_deg)
+        self.lon_interpolator = interp1d(self.__path_time, self.__path_lon_deg)
+
+        PositionProvider.__init__(self, **params)
+
 
     def connect(self):
         self.is_connected = True
@@ -177,10 +205,18 @@ class PositionSimulation(PositionProvider):
         self.is_connected = False
         
     def update_position(self):
-        phi = 0.3 * datetime.datetime.now().timestamp()
-        self.time      = datetime.datetime.now().timestamp()
-        self.latitude  = 50.97872 + 0.001 * np.sin(phi)
-        self.longitude = 11.3319 + 0.001 * np.cos(phi)
-        self.velocity  = 0
-        self.heading   = -phi * 180 /np.pi
+        self.time = datetime.datetime.now().timestamp()
+        
+        if self.time <= self.__path_time[0]:
+            self.latitude  = self.__path_lat_deg[0]
+            self.longitude = self.__path_lon_deg[0]
+            self.heading   = 0
+        elif self.time >= self.__path_time[-1]:
+            self.latitude  = self.__path_lat_deg[-1]
+            self.longitude = self.__path_lon_deg[-1]
+            self.heading   = 0
+        else:
+            self.latitude  = self.lat_interpolator(self.time)
+            self.longitude = self.lon_interpolator(self.time)
+            self.heading   = 0
         return True

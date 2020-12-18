@@ -92,7 +92,7 @@ class OSRM(Router):
                     coords = np.array(step["geometry"]["coordinates"])
                     lat_deg = np.hstack([lat_deg, coords[:,1]])
                     lon_deg = np.hstack([lon_deg, coords[:,0]])
-        
+                
         return {"lat_deg":lat_deg,"lon_deg":lon_deg}
 
 
