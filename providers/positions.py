@@ -207,16 +207,21 @@ class PositionSimulation(PositionProvider):
     def update_position(self):
         self.time = datetime.datetime.now().timestamp()
         
+        epsilon = 1 # time to calculate the difference quotient for the heading
+        
         if self.time <= self.__path_time[0]:
             self.latitude  = self.__path_lat_deg[0]
             self.longitude = self.__path_lon_deg[0]
             self.heading   = 0
-        elif self.time >= self.__path_time[-1]:
+        elif self.time >= self.__path_time[-1] - epsilon:
             self.latitude  = self.__path_lat_deg[-1]
             self.longitude = self.__path_lon_deg[-1]
             self.heading   = 0
         else:
             self.latitude  = self.lat_interpolator(self.time)
             self.longitude = self.lon_interpolator(self.time)
-            self.heading   = 0
+            lat2           = self.lat_interpolator(self.time+epsilon)
+            lon2           = self.lon_interpolator(self.time+epsilon)
+            airline        = helpers.angles.calc_properties_of_airline(lat1_deg=self.latitude, lon1_deg=self.longitude, lat2_deg=lat2, lon2_deg=lon2)
+            self.heading   = airline["azimuth_from_point_1_towards_2_deg"]
         return True

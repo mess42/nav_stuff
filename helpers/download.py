@@ -20,7 +20,7 @@ class FakeFileHandle(object):
         of a file, but someone else expects a filehandle it can .read()
         
         example:
-        f    = open("foo.txt", "r") # or "rb"
+        f    = open("foo.txt", "r")
         dat  = f.read()       
         f2   = FakeFileHandle(dat)
         dat2 = f2.read()
@@ -54,6 +54,7 @@ def remote_png_to_numpy(url):
                 Image as numpy array.
                 Shape is (height, width, channel)
     """
+    print("Downloading", url)
     img_request = requests.get(url)
     filehandle  = FakeFileHandle( content = img_request.content )
     pil_image   = PngImagePlugin.PngImageFile(filehandle).convert("RGB")
@@ -67,6 +68,7 @@ def remote_json_to_py(url):
     @param  url (str) Remote file location
     @return p (list or dict)
     """
+    print("Downloading", url)
     json_request = requests.get(url)
     p = json.JSONDecoder().decode( s = json_request.content.decode("utf-8") )
     return p
