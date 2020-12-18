@@ -2,14 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 This file defines direction providers.
-A direction provider converts a route to message signs and speech.
+A direction provider converts a route to text, sign and speech data.
 """
-import gi
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, GLib
 
 import calc.angles
-import widgets.direction_icons
 
 def get_mapping_of_names_to_classes():
     """
@@ -150,17 +146,9 @@ class Director(object):
         self.maneuvers = []
         self.i_current_maneuver = 0
     
-    def set_data(self, maneuvers):
+    def set_data(self, router_maneuvers):
         pass # base class does not do anything
-    
-    def get_icon_class_by_name(self,name):
-        d = { "arrive"       : widgets.direction_icons.CheckerFlag,
-              "crossing"     : widgets.direction_icons.Crossing,
-              "nesw_arrow"   : widgets.direction_icons.NESWArrow,
-              "notification" : widgets.direction_icons.Notification,
-            }
-        return d[name]
-    
+        
     def maneuver_to_text_blocks(self, maneuver):        
 
         # get the first draft        
@@ -192,33 +180,12 @@ class Director(object):
     
         return blocks
     
-    def new_maneuver_widget(self, i_maneuver, size_px):
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        if (i_maneuver >= 0 and i_maneuver < len(self.maneuvers)):
-            maneuver = self.maneuvers[i_maneuver]
-            text_blocks = self.maneuver_to_text_blocks(maneuver)
-            
-            top_label = Gtk.Label("in some distance")
-
-            IconClass = self.get_icon_class_by_name( maneuver["icon_type"] )
-            icon = IconClass(in_bearing_deg  = maneuver["in_bearing_deg"], 
-                                                out_bearing_deg = maneuver["out_bearing_deg"], 
-                                                bearings_deg    = maneuver["bearings_deg"], 
-                                                size            = size_px, 
-                                                left_driving    = maneuver["left_driving"],
-                                                )
-            bot_txt = text_blocks["to_preposition"] + " " + text_blocks["street_name_after"]
-            bot_label = Gtk.Label(bot_txt)
-            bot_label.set_line_wrap(True) 
-            
-            vbox.add(top_label)
-            vbox.add(icon)
-            vbox.add(bot_label)
-        return vbox
-
 
 class CarDirector(Director):
-    def set_data(self, maneuvers):
-        self.maneuvers = maneuvers
+    def set_data(self, router_maneuvers):
+        self.maneuvers = router_maneuvers
         self.i_current_maneuver = 0
+        
+        for maneuver in self.maneuvers:
+            maneuver["text_blocks"] = self.maneuver_to_text_blocks( maneuver )
 

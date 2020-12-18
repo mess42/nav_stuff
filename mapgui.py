@@ -19,6 +19,7 @@ import widgets.marker_layer
 import widgets.map_layer
 import widgets.buttons
 import widgets.da_buttons
+import widgets.maneuver_bar
 
 import calc.angles
 import calc.round
@@ -98,7 +99,7 @@ class MapWindow(Gtk.Window):
         self.make_nav_buttons( layer = self.interactive_layer )
 
         # Create the bottom maneuver bar.
-        self.maneuver_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.maneuver_bar = widgets.maneuver_bar.ManeuverBar()
         self.widgets.pack_start(child = self.maneuver_bar, expand=True, fill=True, padding=0)
         
         self.add(self.widgets)
@@ -345,16 +346,10 @@ class MapWindow(Gtk.Window):
         self.providers["router"].set_route(waypoints = np.array([ [self.providers["position"].longitude, self.providers["position"].latitude],[float(button.result["lon"]), float(button.result["lat"])] ]))
 
         self.make_message_button(layer = self.interactive_layer, label = "Waiting for directions calculation ...")
-        self.providers["directions"].set_data(maneuvers = self.providers["router"].get_maneuver_data() )
+        self.providers["directions"].set_data(router_maneuvers = self.providers["router"].get_maneuver_data() )
         
-        # manuever bar init
-        self.remove_all_children( self.maneuver_bar )
-        for i_man in np.arange(3):
-            icon = self.providers["directions"].new_maneuver_widget(i_maneuver=i_man, size_px=120) 
-            self.maneuver_bar.add( icon )
-        self.maneuver_bar.set_size_request(360,120) # TODO: hard coded size !!!!
-        self.maneuver_bar.show_all()
-            
+        self.maneuver_bar.set_new_route(maneuvers_with_direction_data = self.providers["directions"].maneuvers )
+                    
         polylines = []
         whole_route_line = self.providers["router"].get_polyline_of_whole_route()
         whole_route_line["color_rgba"] = (0,0,1,.5)
