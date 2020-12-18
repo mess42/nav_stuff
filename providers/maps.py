@@ -11,7 +11,8 @@ import hashlib
 import numpy as np
 from numpy import pi
 
-from providers import tile, download_helpers
+from helpers import tile
+import helpers.download
 
 def get_mapping_of_names_to_classes():
     """
@@ -99,10 +100,9 @@ class SlippyMap(object):
         url = self.make_url( x = x, y = y, zoom = zoom )
         north_lat, west_lon = self.num2deg(x  ,y  ,zoom)
         south_lat, east_lon = self.num2deg(x+1,y+1,zoom)
-        arr = download_helpers.remote_png_to_numpy(url = url)
+        arr = helpers.download.remote_png_to_numpy(url = url)
         ysize, xsize, c = np.shape(arr)
         
-        print( "downloading", url )
         slippy_tile = tile.RasterTile( raster_image   = arr ,
                                        angular_extent = {"north_lat": north_lat, "east_lon":  east_lon, "south_lat": south_lat, "west_lon":  west_lon },
                                        zoom           = zoom

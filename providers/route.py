@@ -7,8 +7,8 @@ A route provider finds a set of roads, leading from a start location to a destin
 
 import numpy as np
 
-import providers.download_helpers
-import calc.angles
+import helpers.download
+import helpers.angles
 
 
 def get_mapping_of_names_to_classes():
@@ -73,7 +73,7 @@ class OSRM(Router):
 
         waypoints_as_str = ";".join( list(",".join(point) for point in np.array(waypoints, dtype=str) ) )
         url = self.url_template.replace("{waypoints}", waypoints_as_str)
-        d = providers.download_helpers.remote_json_to_py(url=url)
+        d = helpers.download.remote_json_to_py(url=url)
         
         if d["code"].upper() != "OK":
             raise Exception(d["code"])

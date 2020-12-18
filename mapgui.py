@@ -21,8 +21,8 @@ import widgets.buttons
 import widgets.da_buttons
 import widgets.maneuver_bar
 
-import calc.angles
-import calc.round
+import helpers.angles
+import helpers.round
 
 class MapWindow(Gtk.Window):
     def __init__(self, 
@@ -176,17 +176,17 @@ class MapWindow(Gtk.Window):
 
     def enrich_results_with_data_rel_to_ego_pos(self,list_of_result_dicts):
         for res in list_of_result_dicts:
-            airline = calc.angles.calc_properties_of_airline(
+            airline = helpers.angles.calc_properties_of_airline(
                          lat1_deg = self.providers["position"].latitude,
                          lon1_deg = self.providers["position"].longitude,
                          lat2_deg = float(res["lat"]),
                          lon2_deg = float(res["lon"])
                          )
-            blocks = calc.round.distance_to_rounded_textblocks(airline["distance_m"])
+            blocks = helpers.round.distance_to_rounded_textblocks(airline["distance_m"])
             res["rounded_distance_str"] = blocks["distance"] + " " + blocks["distance_unit_abbrev"]
                         
             res["azimuth_deg"] = airline["azimuth_from_point_1_towards_2_deg"]
-            res["nesw"]        = calc.angles.azimuth_to_nesw_string(azim_deg = airline["azimuth_from_point_1_towards_2_deg"])
+            res["nesw"]        = helpers.angles.azimuth_to_nesw_string(azim_deg = airline["azimuth_from_point_1_towards_2_deg"])
 
         return list_of_result_dicts
 

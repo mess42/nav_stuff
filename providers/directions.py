@@ -5,7 +5,7 @@ This file defines direction providers.
 A direction provider converts a route to text, sign and speech data.
 """
 
-import calc.angles
+import helpers.angles
 
 def get_mapping_of_names_to_classes():
     """
@@ -165,7 +165,7 @@ class Director(object):
            "{street_name_after}": maneuver["street_name_after"],
            "{movement_modifier}": "{" + maneuver["movement_modifier"] +"}",
            "{exit_number}"      : self.language_dicts["ordinals"][maneuver["exit_number"]],
-           "{nesw_after}"       : calc.angles.azimuth_to_nesw_string( azim_deg = maneuver["out_bearing_deg"] )
+           "{nesw_after}"       : helpers.angles.azimuth_to_nesw_string( azim_deg = maneuver["out_bearing_deg"] )
             }
         for key in self.language_dicts["modifiers2"]:
             text_replacement_dict["{"+ key + "}"] = self.language_dicts["modifiers2"][key]

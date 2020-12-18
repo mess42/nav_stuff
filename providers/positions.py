@@ -13,7 +13,7 @@ import numpy as np
 import serial
 import datetime
 
-import calc.angles
+import helpers.angles
 
 def get_mapping_of_names_to_classes():
     """
@@ -183,7 +183,7 @@ class PositionSimulation(PositionProvider):
                 
         self.__path_lat_deg = np.array(dic["lat_deg"])
         self.__path_lon_deg = np.array(dic["lon_deg"])
-        delta_in_m = calc.angles.haversine_distance(lat1_deg = self.__path_lat_deg[1:], 
+        delta_in_m = helpers.angles.haversine_distance(lat1_deg = self.__path_lat_deg[1:], 
                                                     lon1_deg = self.__path_lon_deg[1:], 
                                                     lat2_deg = self.__path_lat_deg[:-1], 
                                                     lon2_deg = self.__path_lon_deg[:-1],

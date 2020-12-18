@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import calc.round
+import helpers.round
 
 class Marker(object):
     def __init__(self, draftsman, **params):
@@ -419,7 +419,7 @@ class ArrowWithOffsetLabel(Draftsman):
             xtext = x + dx - np.sin(heading_rad) * (self.arrow_length + 5)
             ytext = y + dy + np.cos(heading_rad) * (self.arrow_length + 5)
 
-            blocks = calc.round.distance_to_rounded_textblocks( distance_in_m = offset_m )
+            blocks = helpers.round.distance_to_rounded_textblocks( distance_in_m = offset_m )
             self.text.label = blocks["distance"] + " " + blocks["distance_unit_abbrev"]
             self.text.draw(ctx, xtext, ytext, heading_rad)
             

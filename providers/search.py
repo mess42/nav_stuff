@@ -5,7 +5,7 @@ This file defines search providers.
 A search provider is used to convert a text input to destination coordinates.
 """
 
-import providers.download_helpers
+import helpers.download
 import urllib.parse
 
 # TODO: make a new simple provider that accepts coordinate inputs and converts them to float.
@@ -34,7 +34,7 @@ class Nominatim(SearchProvider):
     def find(self, query):
         query = urllib.parse.quote(query) # encode special characters, URL style
         url = self.url_template.replace("{query}", query)
-        search_results = providers.download_helpers.remote_json_to_py(url)
+        search_results = helpers.download.remote_json_to_py(url)
         search_results = self.postprocessing(search_results)
         return search_results
     
