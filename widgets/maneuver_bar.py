@@ -13,23 +13,23 @@ import helpers.angles
 
 
 class ManeuverBar(Gtk.Box):
-    def __init__(self, in_bearing_is_down = True, pos_tolerance = 20, orientation = Gtk.Orientation.HORIZONTAL ):
+    def __init__(self, number_of_widgets = 3, in_bearing_is_down = True, pos_tolerance = 20, orientation = Gtk.Orientation.HORIZONTAL ):
     
         Gtk.Window.__init__(self, orientation=orientation, spacing = 10)
         
         self.maneuvers = []
-        self.maneuver_widgets = []
         self.in_bearing_is_down = in_bearing_is_down
         self.search_index_range = [0,0]
         self.pos_tolerance = pos_tolerance
-
+        self.number_of_widgets = number_of_widgets
+        
     
     def set_new_route(self, maneuvers_with_direction_data):
         self.maneuvers = maneuvers_with_direction_data
         
         self.search_index_range = self.get_search_range( i_maneuver = 0)
 
-        self.remake_all_widgets()
+        self.remake_all_widgets(i_start=0, number_of_widgets=self.number_of_widgets)
 
 
     def get_search_range(self, i_maneuver, overlap_distance = 200 ):
@@ -48,17 +48,16 @@ class ManeuverBar(Gtk.Box):
         
         return [imin, imax]
 
-    def remake_all_widgets(self):
+    def remake_all_widgets(self, i_start, number_of_widgets):
         """
         @param in_bearing_is_down (bool)
             If True, the icon is tilted so that the arrow comes from the bottom.
             If False, the icon top is north.
         """
-        self.maneuver_widgets = []
         for child in self.get_children():
             self.remove(child)
             
-        for i_man in np.arange(5): # TODO: hard coded start from 0 here
+        for i_man in np.arange(number_of_widgets) + i_start:
             self.add_a_widget(i_man)
 
 
@@ -68,7 +67,6 @@ class ManeuverBar(Gtk.Box):
                          maneuver_id = i_man, 
                          in_bearing_is_down = self.in_bearing_is_down, 
                          size_px = 120) 
-        self.maneuver_widgets.append( man_widget )
         self.add( man_widget )
         self.set_size_request(360,120) # TODO: hard coded size !!!!
         self.show_all()
@@ -79,17 +77,17 @@ class ManeuverBar(Gtk.Box):
         # check if auto-rotate was toggled
         if in_bearing_is_down != self.in_bearing_is_down:
             self.in_bearing_is_down = in_bearing_is_down
-            self.remake_all_widgets()
+            self.remake_all_widgets( i_start = self.get_children()[0].maneuver_id, number_of_widgets = self.number_of_widgets)
         
         # check if the current position is in the search range
-        if len(self.maneuver_widgets) != 0:
+        if len(self.get_children()) != 0:
             
             # TODO: make this whole section elegant, 
             # encapsulate
             # less if statements
             # and don't calculate everything on the fly over and over again
             
-            man_id = self.maneuver_widgets[0].maneuver_id
+            man_id = self.get_children()[0].maneuver_id
             
             # slice out a small part of the route
             search_i = self.search_index_range
@@ -114,14 +112,13 @@ class ManeuverBar(Gtk.Box):
                 i_next = i_closest
             
             if i_next > route_i_man and dist[route_i_man] > self.pos_tolerance:
-                self.maneuver_widgets.pop(0)
                 self.remove( self.get_children()[0] )
                 # TODO: don't list the children twice, both in get_children and in the widget list
                 
-                if self.maneuver_widgets[-1].maneuver_id < len(self.maneuvers)-1:
-                    self.add_a_widget(i_man = self.maneuver_widgets[-1].maneuver_id + 1)
+                if self.get_children()[-1].maneuver_id < len(self.maneuvers)-1:
+                    self.add_a_widget(i_man = self.get_children()[-1].maneuver_id + 1)
                 
-                self.search_index_range = self.get_search_range(i_maneuver = self.maneuver_widgets[0].maneuver_id, overlap_distance = 200 )
+                self.search_index_range = self.get_search_range(i_maneuver = self.get_children()[0].maneuver_id, overlap_distance = 200 )
                 
                 
             else:
@@ -130,5 +127,5 @@ class ManeuverBar(Gtk.Box):
                                                              lat2_deg=lat_deg, 
                                                              lon2_deg=lon_deg)
 
-                self.maneuver_widgets[0].set_top_text("airline " + str(int(air_dist)) )
+                self.get_children()[0].set_top_text("airline " + str(int(air_dist)) )
     
