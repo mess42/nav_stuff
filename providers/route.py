@@ -59,18 +59,19 @@ class Router(object):
              waypoints[:,0] are longitudes
              waypoints[:,1] are latitudes
         """
-        pass
-
-    def get_polyline_of_whole_route(self):
-        return {"lat_deg":[],"lon_deg":[]}
+        self.lat_deg = []
+        self.lon_deg = []
+        self.maneuvers = []
+        self.dist_from_start = []
+        
+    def get_polyline_of_whole_route(self, color_rgba = (0,0,1,0.5) ):
+        return {"lat_deg":self.lat_deg,"lon_deg":self.lon_deg, "color_rgba": color_rgba}
     
-    def get_maneuver_data(self):
-        return []
 
 
 class OSRM(Router):    
     def set_route(self, waypoints):
-
+ 
         waypoints_as_str = ";".join( list(",".join(point) for point in np.array(waypoints, dtype=str) ) )
         url = self.url_template.replace("{waypoints}", waypoints_as_str)
         d = helpers.download.remote_json_to_py(url=url)
@@ -79,32 +80,6 @@ class OSRM(Router):
             raise Exception(d["code"])
         
         self.route = d["routes"][0]
-        
-        
-    def get_polyline_of_whole_route(self):
-
-        lat_deg = []
-        lon_deg = []
-            
-        if"legs" in self.route:
-            for leg in self.route["legs"]:
-                for step in leg["steps"]:
-                    coords = np.array(step["geometry"]["coordinates"])
-                    lat_deg = np.hstack([lat_deg, coords[:,1]])
-                    lon_deg = np.hstack([lon_deg, coords[:,0]])
-                
-        return {"lat_deg":lat_deg,"lon_deg":lon_deg}
-
-
-    def get_maneuver_data(self):
-        
-        # First shot: every OSRM step is exactly one maneuver.
-        # TODO: Rotary entry and exit are 2 separate steps. 
-        #       Both, entry and exit, are represented by a 3-way crossing (rotary, rotary, exit).
-        #       Better: combine (all intersections of the entry step) and (the first intersection of the exit step) to one big icon.
-        # TODO: Notifications are a maneuver. Let's check whether this is a good choice in practice.
-        # TODO: use different icon types for roundabouts
-        # TODO: use different icon type for U-Turn
         
         icon_types = {"arrive":"arrive",
            "continue"        :"crossing",
@@ -121,14 +96,35 @@ class OSRM(Router):
            "roundabout"      :"crossing",
            "rotary"          :"crossing",
            "notification"    :"notification",
-           "roundabout turn" : 	"crossing",
+           "roundabout turn" :"crossing",
            "exit roundabout" :"crossing",
             }
         
-        maneuvers = []
-        if"legs" in self.route:
-            for leg in self.route["legs"]:
+        self.__set_maneuvers(route = self.route, icon_types = icon_types)
+        
+        
+    def __set_maneuvers(self, route, icon_types):    
+
+        # First shot: every OSRM step is exactly one maneuver.
+        # TODO: Rotary entry and exit are 2 separate steps. 
+        #       Both, entry and exit, are represented by a 3-way crossing (rotary, rotary, exit).
+        #       Better: combine (all intersections of the entry step) and (the first intersection of the exit step) to one big icon.
+        # TODO: Notifications are a maneuver. Let's check whether this is a good choice in practice.
+        # TODO: use different icon types for roundabouts
+        # TODO: use different icon type for U-Turn
+
+        self.lat_deg = []
+        self.lon_deg = []
+        self.maneuvers = []
+            
+        if"legs" in route:
+            for leg in route["legs"]:
                 for step in leg["steps"]:
+                    coords = np.array(step["geometry"]["coordinates"])
+                    self.lat_deg = np.hstack([self.lat_deg, coords[:,1]])
+                    self.lon_deg = np.hstack([self.lon_deg, coords[:,0]])
+                    maneuver_ind =  max( 0, len(self.lat_deg)-1 )
+                       
 
                     typ = step["maneuver"]["type"]
 
@@ -154,41 +150,28 @@ class OSRM(Router):
                     if "exit" in step["maneuver"]:
                         exit_number = step["maneuver"]["exit"]
                     
-                    # The first element of the geometry is the maneuver location itself
-                    # step["intersections"][0]["location"] == step["geometry"]["coordinates"][0])
-                    geo_after  = np.array(step["geometry"]["coordinates"])
-                    delta = helpers.angles.haversine_distance(lat1_deg = geo_after[ :-1,1], 
-                                                             lon1_deg = geo_after[ :-1,0], 
-                                                             lat2_deg = geo_after[1:  ,1], 
-                                                             lon2_deg = geo_after[1:  ,0])
-                    
-                    dist_after = np.hstack( [[0], np.cumsum(delta)] )
-                    
-                    # TODO: decide whether empty geo should be replaced by maneuver location
-                    #       also above as initial value
-                                       
-                    maneuver = {
-                       "location"          : step["intersections"][0]["location"],
-                       "bearings_deg"      : bearings_deg,
-                       "in_bearing_deg"    : in_bearing_deg,
-                       "out_bearing_deg"   : out_bearing_deg,
-                       "icon_type"         : icon_types[ typ ],
-                       "left_driving"      : ( step["driving_side"].upper() == "LEFT" ),
-                       "type"              : typ,
-                       "street_name_after" : step["name"],
-                       "movement_modifier" : modifier,
-                       "exit_number"       : exit_number,
-                       "geometry_after"    : geo_after,
-                       "distance_after"    : dist_after,
-                        }
+                    self.maneuvers += [{
+                       "location"            : step["intersections"][0]["location"],
+                       "bearings_deg"        : np.array(bearings_deg),
+                       "in_bearing_deg"      : in_bearing_deg,
+                       "out_bearing_deg"     : out_bearing_deg,
+                       "icon_type"           : icon_types[ typ ],
+                       "left_driving"        : ( step["driving_side"].upper() == "LEFT" ),
+                       "type"                : typ,
+                       "street_name_after"   : step["name"],
+                       "movement_modifier"   : modifier,
+                       "exit_number"         : exit_number,
+                       "ind_on_latlon_line"  : maneuver_ind,
+                       "distance_to_next"    : step["distance"],
+                        }]
 
-                    maneuvers += [ maneuver ]
+        self.maneuvers[0]["distance_to_prev"] = 0
+        for i_man in np.arange(len(self.maneuvers)-1)+1:
+            self.maneuvers[i_man]["distance_to_prev"] = self.maneuvers[i_man-1]["distance_to_next"]
 
-        # add geometry before
-        maneuvers[0]["geometry_before"] = [maneuvers[0]["location"]]
-        maneuvers[0]["distance_before"] = [0]
-        for i in np.arange(len(maneuvers)-1)+1:
-            maneuvers[i]["geometry_before"] = maneuvers[i-1]["geometry_after"]
-            maneuvers[i]["distance_before"] = maneuvers[i-1]["distance_after"][-1] - maneuvers[i-1]["distance_after"]
-        
-        return maneuvers
+
+        delta = helpers.angles.haversine_distance(lat1_deg = self.lat_deg[:-1], 
+                                                  lon1_deg = self.lon_deg[:-1], 
+                                                  lat2_deg = self.lat_deg[1:], 
+                                                  lon2_deg = self.lon_deg[1:])
+        self.dist_from_start = np.hstack( [[0], np.cumsum(delta)] )

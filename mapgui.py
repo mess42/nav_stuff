@@ -99,7 +99,7 @@ class MapWindow(Gtk.Window):
         self.make_nav_buttons( layer = self.interactive_layer )
 
         # Create the bottom maneuver bar.
-        self.maneuver_bar = widgets.maneuver_bar.ManeuverBar()
+        self.maneuver_bar = widgets.maneuver_bar.ManeuverBar( in_bearing_is_down = self.auto_rotate )
         self.widgets.pack_start(child = self.maneuver_bar, expand=True, fill=True, padding=0)
         
         self.add(self.widgets)
@@ -346,13 +346,12 @@ class MapWindow(Gtk.Window):
         self.providers["router"].set_route(waypoints = np.array([ [self.providers["position"].longitude, self.providers["position"].latitude],[float(button.result["lon"]), float(button.result["lat"])] ]))
 
         self.make_message_button(layer = self.interactive_layer, label = "Waiting for directions calculation ...")
-        self.providers["directions"].set_data(router_maneuvers = self.providers["router"].get_maneuver_data() )
+        self.providers["directions"].set_data(router_maneuvers = self.providers["router"].maneuvers )
         
         self.maneuver_bar.set_new_route(maneuvers_with_direction_data = self.providers["directions"].maneuvers )
                     
         polylines = []
         whole_route_line = self.providers["router"].get_polyline_of_whole_route()
-        whole_route_line["color_rgba"] = (0,0,1,.5)
         if len(whole_route_line["lat_deg"]) != 0:
             polylines.append(whole_route_line)
         
@@ -405,7 +404,7 @@ class MapWindow(Gtk.Window):
         self.map_layer.update(cropped_tile)
         self.marker_layer.update(cropped_tile = cropped_tile, position = self.providers["position"] )
         self.north_arrow.update(north_bearing_deg = angle_rad * -180/np.pi)
-        self.maneuver_bar.update( lat_deg = self.providers["position"].latitude, lon_deg = self.providers["position"].longitude )
+        self.maneuver_bar.update( lat_deg = self.providers["position"].latitude, lon_deg = self.providers["position"].longitude, in_bearing_is_down = self.auto_rotate )
         
         repeat = True
         return repeat
