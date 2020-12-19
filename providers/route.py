@@ -129,12 +129,6 @@ class OSRM(Router):
         if"legs" in self.route:
             for leg in self.route["legs"]:
                 for step in leg["steps"]:
-                    geo_before = []
-                    dist_before = 0
-                    if len(maneuvers) != 0:
-                        # the geometry before this maneuver is the geometry after the last one
-                        geo_before  = maneuvers[-1]["geometry_after"]
-                        dist_before = maneuvers[-1]["distance_after"]
 
                     typ = step["maneuver"]["type"]
 
@@ -160,6 +154,19 @@ class OSRM(Router):
                     if "exit" in step["maneuver"]:
                         exit_number = step["maneuver"]["exit"]
                     
+                    # The first element of the geometry is the maneuver location itself
+                    # step["intersections"][0]["location"] == step["geometry"]["coordinates"][0])
+                    geo_after  = np.array(step["geometry"]["coordinates"])
+                    delta = helpers.angles.haversine_distance(lat1_deg = geo_after[ :-1,1], 
+                                                             lon1_deg = geo_after[ :-1,0], 
+                                                             lat2_deg = geo_after[1:  ,1], 
+                                                             lon2_deg = geo_after[1:  ,0])
+                    
+                    dist_after = np.hstack( [[0], np.cumsum(delta)] )
+                    
+                    # TODO: decide whether empty geo should be replaced by maneuver location
+                    #       also above as initial value
+                                       
                     maneuver = {
                        "location"          : step["intersections"][0]["location"],
                        "bearings_deg"      : bearings_deg,
@@ -171,12 +178,17 @@ class OSRM(Router):
                        "street_name_after" : step["name"],
                        "movement_modifier" : modifier,
                        "exit_number"       : exit_number,
-                       "geometry_before"   : geo_before,
-                       "geometry_after"    : step["geometry"]["coordinates"],
-                       "distance_before"   : dist_before,
-                       "distance_after"    : step["distance"]
+                       "geometry_after"    : geo_after,
+                       "distance_after"    : dist_after,
                         }
-                    
+
                     maneuvers += [ maneuver ]
 
+        # add geometry before
+        maneuvers[0]["geometry_before"] = [maneuvers[0]["location"]]
+        maneuvers[0]["distance_before"] = [0]
+        for i in np.arange(len(maneuvers)-1)+1:
+            maneuvers[i]["geometry_before"] = maneuvers[i-1]["geometry_after"]
+            maneuvers[i]["distance_before"] = maneuvers[i-1]["distance_after"][-1] - maneuvers[i-1]["distance_after"]
+        
         return maneuvers

@@ -44,6 +44,7 @@ def haversine_distance(lat1_deg, lon1_deg, lat2_deg, lon2_deg, r = 6365000 ):
     d = 2 * r * np.arcsin( np.sqrt(tmp) )
     return d
 
+
 def calc_angle_C(a,b,c, lon1_deg, lon2_deg):
     """
     @brief: Function to assist the airline function (do not use externally).

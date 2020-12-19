@@ -405,6 +405,7 @@ class MapWindow(Gtk.Window):
         self.map_layer.update(cropped_tile)
         self.marker_layer.update(cropped_tile = cropped_tile, position = self.providers["position"] )
         self.north_arrow.update(north_bearing_deg = angle_rad * -180/np.pi)
+        self.maneuver_bar.update( lat_deg = self.providers["position"].latitude, lon_deg = self.providers["position"].longitude )
         
         repeat = True
         return repeat
