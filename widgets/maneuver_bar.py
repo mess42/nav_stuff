@@ -113,7 +113,6 @@ class ManeuverBar(Gtk.Box):
             
             if i_next > route_i_man and dist[route_i_man] > self.pos_tolerance:
                 self.remove( self.get_children()[0] )
-                # TODO: don't list the children twice, both in get_children and in the widget list
                 
                 if self.get_children()[-1].maneuver_id < len(self.maneuvers)-1:
                     self.add_a_widget(i_man = self.get_children()[-1].maneuver_id + 1)
@@ -122,10 +121,14 @@ class ManeuverBar(Gtk.Box):
                 
                 
             else:
-                air_dist = helpers.angles.haversine_distance(lat1_deg=self.maneuvers[man_id]["location"][1], 
-                                                             lon1_deg=self.maneuvers[man_id]["location"][0],
-                                                             lat2_deg=lat_deg, 
-                                                             lon2_deg=lon_deg)
+                air_dist_to_next = helpers.angles.haversine_distance(lat1_deg=route_lats_deg[i_next], 
+                                                                     lon1_deg=route_lons_deg[i_next],
+                                                                     lat2_deg=lat_deg, 
+                                                                     lon2_deg=lon_deg)
 
-                self.get_children()[0].set_top_text("airline " + str(int(air_dist)) )
+                dist = route_dists_from_start[ route_i_man ] - route_dists_from_start[ i_next ] + air_dist_to_next
+                dist_blocks = helpers.round.distance_to_rounded_textblocks(dist)
+                text = self.maneuvers[man_id]["text_blocks"]["to_preposition"] + " " + dist_blocks["distance"] + " " + dist_blocks["distance_unit_abbrev"]
+
+                self.get_children()[0].set_top_text( text )
     
