@@ -120,10 +120,11 @@ class OSRM(Router):
         if"legs" in route:
             for leg in route["legs"]:
                 for step in leg["steps"]:
+                    maneuver_ind =  max( 0, len(self.lat_deg)-1 )
+
                     coords = np.array(step["geometry"]["coordinates"])
                     self.lat_deg = np.hstack([self.lat_deg, coords[:,1]])
                     self.lon_deg = np.hstack([self.lon_deg, coords[:,0]])
-                    maneuver_ind =  max( 0, len(self.lat_deg)-1 )
                        
 
                     typ = step["maneuver"]["type"]
@@ -161,17 +162,25 @@ class OSRM(Router):
                        "street_name_after"   : step["name"],
                        "movement_modifier"   : modifier,
                        "exit_number"         : exit_number,
-                       "ind_on_latlon_line"  : maneuver_ind,
+                       "ind_on_route"        : maneuver_ind,
                        "distance_to_next"    : step["distance"],
                         }]
 
-        self.maneuvers[0]["distance_to_prev"] = 0
-        for i_man in np.arange(len(self.maneuvers)-1)+1:
-            self.maneuvers[i_man]["distance_to_prev"] = self.maneuvers[i_man-1]["distance_to_next"]
-
-
+        # calculate the road distance from the start
         delta = helpers.angles.haversine_distance(lat1_deg = self.lat_deg[:-1], 
                                                   lon1_deg = self.lon_deg[:-1], 
                                                   lat2_deg = self.lat_deg[1:], 
                                                   lon2_deg = self.lon_deg[1:])
         self.dist_from_start = np.hstack( [[0], np.cumsum(delta)] )
+        
+        # add distance to previous
+        self.maneuvers[0]["distance_to_prev"] = 0
+        for i_man in np.arange(len(self.maneuvers)-1)+1:
+            self.maneuvers[i_man]["distance_to_prev"] = self.maneuvers[i_man-1]["distance_to_next"]
+
+        # add whole route to each maneuver
+        # (Python uses lazy copy, so RAM is occupied only once)
+        for i_man in np.arange(len(self.maneuvers)):
+            self.maneuvers[i_man]["route_lat_deg"]              = self.lat_deg
+            self.maneuvers[i_man]["route_lon_deg"]              = self.lon_deg
+            self.maneuvers[i_man]["distances_from_route_start"] = self.dist_from_start
