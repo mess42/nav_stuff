@@ -95,23 +95,17 @@ class ManeuverBar(Gtk.Box):
             route_lats_deg         = self.maneuvers[man_id]["route_lat_deg"][ search_i[0] : search_i[1] ]
             route_lons_deg         = self.maneuvers[man_id]["route_lon_deg"][ search_i[0] : search_i[1] ]
             route_i_man            = self.maneuvers[man_id]["ind_on_route"] - search_i[0]
-                        
-            dist = helpers.angles.haversine_distance(lat1_deg=route_lats_deg, lon1_deg=route_lons_deg, lat2_deg=lat_deg, lon2_deg=lon_deg)
+                       
+            a_rel, mindist = helpers.angles.relation_of_angular_polyline_segments_to_reference_position(
+                                 lat_poly_deg = route_lats_deg, 
+                                 lon_poly_deg = route_lons_deg, 
+                                 lat_ref_deg  = lat_deg, 
+                                 lon_ref_deg  = lon_deg)
+            
+            i_closest_segment = np.argmin(mindist)
+            dist_from_start = route_dists_from_start[i_closest_segment] + a_rel[i_closest_segment] * (route_dists_from_start[i_closest_segment+1]-route_dists_from_start[i_closest_segment])           
 
-            i_closest = np.argmin(dist)
-            if i_closest == 0:
-                is_behind = True
-            elif i_closest == len(route_dists_from_start)-1:
-                is_behind = False
-            else:
-                is_behind = ( dist[i_closest+1] < dist[i_closest-1] )
-            
-            if is_behind:
-                i_next = i_closest+1
-            else:
-                i_next = i_closest
-            
-            if i_next > route_i_man and dist[route_i_man] > self.pos_tolerance:
+            if dist_from_start - route_dists_from_start[route_i_man] > self.pos_tolerance:
                 self.remove( self.get_children()[0] )
                 
                 if self.get_children()[-1].maneuver_id < len(self.maneuvers)-1:
@@ -121,14 +115,14 @@ class ManeuverBar(Gtk.Box):
                 
                 
             else:
-                air_dist_to_next = helpers.angles.haversine_distance(lat1_deg=route_lats_deg[i_next], 
-                                                                     lon1_deg=route_lons_deg[i_next],
+                air_dist_to_next = helpers.angles.haversine_distance(lat1_deg=route_lats_deg[i_closest_segment+1], 
+                                                                     lon1_deg=route_lons_deg[i_closest_segment+1],
                                                                      lat2_deg=lat_deg, 
                                                                      lon2_deg=lon_deg)
 
-                dist = route_dists_from_start[ route_i_man ] - route_dists_from_start[ i_next ] + air_dist_to_next
+                dist = route_dists_from_start[ route_i_man ] - route_dists_from_start[ i_closest_segment+1 ] + air_dist_to_next
                 dist_blocks = helpers.round.distance_to_rounded_textblocks(dist)
-                text = self.maneuvers[man_id]["text_blocks"]["to_preposition"] + " " + dist_blocks["distance"] + " " + dist_blocks["distance_unit_abbrev"]
-
+                #text = self.maneuvers[man_id]["text_blocks"]["distance_preposition"] + " " + dist_blocks["distance"] + " " + dist_blocks["distance_unit_abbrev"]
+                text = str(dist)
                 self.get_children()[0].set_top_text( text )
     
