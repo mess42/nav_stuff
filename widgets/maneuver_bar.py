@@ -122,7 +122,6 @@ class ManeuverBar(Gtk.Box):
 
                 dist = route_dists_from_start[ route_i_man ] - route_dists_from_start[ i_closest_segment+1 ] + air_dist_to_next
                 dist_blocks = helpers.round.distance_to_rounded_textblocks(dist)
-                #text = self.maneuvers[man_id]["text_blocks"]["distance_preposition"] + " " + dist_blocks["distance"] + " " + dist_blocks["distance_unit_abbrev"]
-                text = str(dist)
+                text = self.maneuvers[man_id]["text_blocks"]["distance_preposition"] + " " + dist_blocks["distance"] + " " + dist_blocks["distance_unit_abbrev"]
                 self.get_children()[0].set_top_text( text )
     
