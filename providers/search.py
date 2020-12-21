@@ -6,7 +6,6 @@ A search provider is used to convert a text input to destination coordinates.
 """
 
 import helpers.download
-import urllib.parse
 
 # TODO: make a new simple provider that accepts coordinate inputs and converts them to float.
 
@@ -32,7 +31,7 @@ class Nominatim(SearchProvider):
         self.url_template = url_template
         
     def find(self, query):
-        query = urllib.parse.quote(query) # encode special characters, URL style
+        query = helpers.download.encode_special_characters(query) # encode special characters, URL style
         url = self.url_template.replace("{query}", query)
         search_results = helpers.download.remote_json_to_py(url)
         search_results = self.postprocessing(search_results)

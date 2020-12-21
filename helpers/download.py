@@ -5,6 +5,7 @@ This file provides helper routines for server communication.
 """
 from PIL import PngImagePlugin
 import numpy as np
+import urllib.parse
 import requests
 import json
 
@@ -43,6 +44,13 @@ class FakeFileHandle(object):
     
     def seek(self, new_pos):
         self.readpos = new_pos
+
+
+def encode_special_characters(query):
+    return urllib.parse.quote_plus(query) # encode special characters, URL style
+
+def decode_special_characters(query):
+    return urllib.parse.unquote_plus(query) # encode special characters, URL style
 
 
 def remote_png_to_numpy(url):
