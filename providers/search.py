@@ -41,10 +41,7 @@ class Nominatim(SearchProvider):
     def postprocessing(self, search_results):
         return search_results
 
-class OSMScout(Nominatim):
-    def __init__(self):
-        Nominatim.__init__(self, url_template = "http://localhost:8553/v1/search?limit=10&search={query}")
-        
+class OSMScout(Nominatim):        
     def postprocessing(self, search_results):
         for res in search_results:
             res["lon"] = res["lng"]

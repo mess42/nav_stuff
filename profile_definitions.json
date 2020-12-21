@@ -54,7 +54,7 @@
         },
         "OSMScout":{
             "class_name": "OSMScout",
-            "parameters": {}
+            "parameters": {"url_template": "http://localhost:8553/v1/search?limit=10&search={query}"}
         }
     },
     "router": {
