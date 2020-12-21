@@ -18,7 +18,8 @@ def get_mapping_of_names_to_classes():
     @return d (dict)
     """
     d = {"Router": Router,
-        "OSRM": OSRM
+        "OSRM": OSRM,
+        "OSM_Scout": OSM_Scout,
         }
     return d
 
@@ -184,3 +185,33 @@ class OSRM(Router):
             self.maneuvers[i_man]["route_lat_deg"]              = self.lat_deg
             self.maneuvers[i_man]["route_lon_deg"]              = self.lon_deg
             self.maneuvers[i_man]["distances_from_route_start"] = self.dist_from_start
+
+
+class OSM_Scout(Router):    
+    def set_route(self, waypoints):
+        locs = []
+        for point in np.array(waypoints):
+            locs += ["{\"lat\":" + str(point[1]) + ", \"lon\":" + str(point[0]) +"}"]
+        locations = "\"locations\": [" + ", ".join(locs) + "]"
+        
+        # TODO: allow further options
+        
+        # "costing": "auto", 
+        # "costing_options": {"auto": {"use_ferry": 0.5, "use_highways": 1, "use_tolls": 0.5}}, 
+        # "directions_options": {"language": "en", "units": "kilometers"}}
+        
+        json_str = "json= {" + locations + "}"
+        json_str = helpers.download.encode_special_characters( json_str )
+
+        url = self.url_template.replace("{json}", json_str)
+
+        d = helpers.download.remote_json_to_py(url=url)
+        
+        print(d)
+        import json
+        f = open("valhalla_result.json", "w")
+        json.dump(d, f)
+        f.close()
+        
+        raise NotImplementedError("TODO: implement analysis of server response")
+        self.maneuvers = []

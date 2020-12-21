@@ -22,7 +22,7 @@
                 "default_zoom":17
                 }
         }, 
-        "OSM Scout": {
+        "OSM Scout Server": {
             "class_name": "SlippyMap", 
             "parameters": 
                 {
@@ -52,7 +52,7 @@
             "class_name": "Nominatim",
             "parameters": {"url_template": "https://nominatim.openstreetmap.org/search/{query}?format=json"}
         },
-        "OSMScout":{
+        "OSM Scout Server":{
             "class_name": "OSMScout",
             "parameters": {"url_template": "http://localhost:8553/v1/search?limit=10&search={query}"}
         }
@@ -65,6 +65,10 @@
         "OSRM":{
             "class_name": "OSRM",
             "parameters": {"url_template": "https://router.project-osrm.org/route/v1/driving/{waypoints}?steps=true&overview=false&geometries=geojson"}
+        },
+        "OSM Scout Server":{
+            "class_name": "OSM_Scout",
+            "parameters": {"url_template": "http://localhost:8553/v2/route?json={json}"}
         }
     },
     "directions": {
