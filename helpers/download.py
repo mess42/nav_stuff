@@ -47,10 +47,10 @@ class FakeFileHandle(object):
 
 
 def encode_special_characters(query):
-    return urllib.parse.quote_plus(query) # encode special characters, URL style
+    return urllib.parse.quote(query) # encode special characters, URL style
 
 def decode_special_characters(query):
-    return urllib.parse.unquote_plus(query) # encode special characters, URL style
+    return urllib.parse.unquote(query) # encode special characters, URL style
 
 
 def remote_png_to_numpy(url):
@@ -78,6 +78,7 @@ def remote_json_to_py(url):
     """
     print("Downloading", url)
     json_request = requests.get(url)
+    print("response=", json_request.content.decode("utf-8"))
     p = json.JSONDecoder().decode( s = json_request.content.decode("utf-8") )
     return p
     

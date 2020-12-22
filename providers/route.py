@@ -191,16 +191,11 @@ class OSM_Scout(Router):
     def set_route(self, waypoints):
         locs = []
         for point in np.array(waypoints):
-            locs += ["{\"lat\":" + str(point[1]) + ", \"lon\":" + str(point[0]) +"}"]
-        locations = "\"locations\": [" + ", ".join(locs) + "]"
+            locs += ["{\"lat\": " + str(point[1]) + ", \"lon\": " + str(point[0]) +"}"]
+        locations = "\"locations\": [" + ", ".join(locs) + "], " + "\"costing\": \"auto\", \"costing_options\": {\"auto\": {\"use_ferry\": 0.5, \"use_highways\": 1, \"use_tolls\": 0.5}},  \"directions_options\": {\"language\": \"en\", \"units\": \"kilometers\"}"
         
-        # TODO: allow further options
-        
-        # "costing": "auto", 
-        # "costing_options": {"auto": {"use_ferry": 0.5, "use_highways": 1, "use_tolls": 0.5}}, 
-        # "directions_options": {"language": "en", "units": "kilometers"}}
-        
-        json_str = "json= {" + locations + "}"
+        json_str = "{" + locations + "}"
+        print("before encoding=", json_str)
         json_str = helpers.download.encode_special_characters( json_str )
 
         url = self.url_template.replace("{json}", json_str)
