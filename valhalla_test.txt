@@ -1,4 +1,0 @@
-http://localhost:8553/v2/route?json={"locations":[{"lat":40.043022,"lon":-76.289932,"street":"North Reservoir Street"},{"lat":40.043152,"lon":-76.290215,"street":""}],"costing":"auto","units":"miles"}
-
-http://localhost:8553/v2/route?json={"locations":[{"lat":50.977878,"lon":11.332208,"street":""},{"lat":52.517033,"lon":13.388798,"street":""}],"costing":"auto","units":"miles"}
-
