@@ -7,6 +7,8 @@ A route provider finds a set of roads, leading from a start location to a destin
 
 import numpy as np
 
+from polyline.polyline.codec import PolylineCodec
+
 import helpers.download
 import helpers.angles
 
@@ -81,6 +83,23 @@ class OSRM(Router):
             raise Exception(d["code"])
         
         self.route = d["routes"][0]
+        self.__set_maneuvers(route = self.route, icon_types = icon_types)
+        
+        
+    def __set_maneuvers(self, route):    
+
+        # First shot: every OSRM step is exactly one maneuver.
+        # TODO: Rotary entry and exit are 2 separate steps. 
+        #       Both, entry and exit, are represented by a 3-way crossing (rotary, rotary, exit).
+        #       Better: combine (all intersections of the entry step) and (the first intersection of the exit step) 
+        #       to one big icon.
+        # TODO: Notifications are a maneuver. Let's check whether this is a good choice in practice.
+        # TODO: use different icon types for roundabouts
+        # TODO: use different icon type for U-Turn
+
+        self.lat_deg = []
+        self.lon_deg = []
+        self.maneuvers = []
         
         icon_types = {"arrive":"arrive",
            "continue"        :"crossing",
@@ -100,24 +119,7 @@ class OSRM(Router):
            "roundabout turn" :"crossing",
            "exit roundabout" :"crossing",
             }
-        
-        self.__set_maneuvers(route = self.route, icon_types = icon_types)
-        
-        
-    def __set_maneuvers(self, route, icon_types):    
 
-        # First shot: every OSRM step is exactly one maneuver.
-        # TODO: Rotary entry and exit are 2 separate steps. 
-        #       Both, entry and exit, are represented by a 3-way crossing (rotary, rotary, exit).
-        #       Better: combine (all intersections of the entry step) and (the first intersection of the exit step) to one big icon.
-        # TODO: Notifications are a maneuver. Let's check whether this is a good choice in practice.
-        # TODO: use different icon types for roundabouts
-        # TODO: use different icon type for U-Turn
-
-        self.lat_deg = []
-        self.lon_deg = []
-        self.maneuvers = []
-            
         if"legs" in route:
             for leg in route["legs"]:
                 for step in leg["steps"]:
@@ -194,18 +196,35 @@ class OSM_Scout(Router):
             locs += ["{\"lat\": " + str(point[1]) + ", \"lon\": " + str(point[0]) +"}"]
         locations     = "\"locations\": [" + ", ".join(locs) + "]" 
         
-        # TODO: define other options as parameters in profiles.json
+        # TODO: no hard coded other_options, define them in profiles.json
         other_options = "\"costing\": \"auto\", \"costing_options\": {\"auto\": {\"use_ferry\": 0.5, \"use_highways\": 1, \"use_tolls\": 0.5}},  \"directions_options\": {\"language\": \"en\", \"units\": \"kilometers\"}"
         
         json_str = "{" + locations + ", " + other_options + "}"
-        
-        print("before encoding=", json_str)
-        
         json_str = helpers.download.encode_special_characters( json_str )
-
         url = self.url_template.replace("{json}", json_str)
 
         d = helpers.download.remote_json_to_py(url=url)
-               
-        raise NotImplementedError("TODO: implement analysis of server response")
+        
+        if d["trip"]["status"] != 0:
+            raise Exception( d["trip"]["status_message"] )
+
+        self.route = d["trip"]
+        self.__set_maneuvers( route = self.route )
+
+    def __set_maneuvers(self, route):    
+
+        self.lat_deg = []
+        self.lon_deg = []
         self.maneuvers = []
+        
+        polycodec = PolylineCodec()
+        
+        for leg in route["legs"]:
+            coords = np.array( polycodec.decode( leg["shape"], precision=6) )
+
+            self.lat_deg = np.hstack([self.lat_deg, coords[:,1]])
+            self.lon_deg = np.hstack([self.lon_deg, coords[:,0]])
+            
+        # TODO: maneuvers
+
+
