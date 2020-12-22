@@ -83,7 +83,7 @@ class OSRM(Router):
             raise Exception(d["code"])
         
         self.route = d["routes"][0]
-        self.__set_maneuvers(route = self.route, icon_types = icon_types)
+        self.__set_maneuvers(route = self.route)
         
         
     def __set_maneuvers(self, route):    

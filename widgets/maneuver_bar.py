@@ -27,7 +27,10 @@ class ManeuverBar(Gtk.Box):
     def set_new_route(self, maneuvers_with_direction_data):
         self.maneuvers = maneuvers_with_direction_data
         
-        self.search_index_range = self.get_search_range( i_maneuver = 0)
+        if len(self.maneuvers) != 0:
+            self.search_index_range = self.get_search_range( i_maneuver = 0)
+        else:
+            self.search_index_range = [0,0]
 
         self.remake_all_widgets(i_start=0, number_of_widgets=self.number_of_widgets)
 
@@ -49,15 +52,12 @@ class ManeuverBar(Gtk.Box):
         return [imin, imax]
 
     def remake_all_widgets(self, i_start, number_of_widgets):
-        """
-        @param in_bearing_is_down (bool)
-            If True, the icon is tilted so that the arrow comes from the bottom.
-            If False, the icon top is north.
-        """
         for child in self.get_children():
             self.remove(child)
-            
-        for i_man in np.arange(number_of_widgets) + i_start:
+        self.set_size_request(0,0)
+
+        number_of_widgets = min(number_of_widgets, len(self.maneuvers) )
+        for i_man in np.arange( number_of_widgets ) + i_start:
             self.add_a_widget(i_man)
 
 
@@ -66,7 +66,7 @@ class ManeuverBar(Gtk.Box):
                          maneuver = self.maneuvers[i_man], 
                          maneuver_id = i_man, 
                          in_bearing_is_down = self.in_bearing_is_down, 
-                         size_px = 120) 
+                         size_px = 120) # TODO: hard coded size !!!!
         self.add( man_widget )
         self.set_size_request(360,120) # TODO: hard coded size !!!!
         self.show_all()
