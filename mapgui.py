@@ -33,6 +33,7 @@ class MapWindow(Gtk.Window):
 
         Gtk.Window.__init__(self)
         self.connect("destroy", self.on_destroy)
+        self.update_delay_in_ms = update_delay_in_ms
         
         # Load Configuration files
         self.profiles              = self.json2dict(profiles_filename)
@@ -52,7 +53,7 @@ class MapWindow(Gtk.Window):
         
         # Create widgets and auto-update them
         self.create_widgets()
-        GLib.timeout_add(update_delay_in_ms, self.on_timeout, None)
+        GLib.timeout_add(500, self.on_first_timeout, None)
 
 
     def create_widgets(self):
@@ -368,30 +369,27 @@ class MapWindow(Gtk.Window):
         # toggle auto-rotate
         self.auto_rotate = not self.auto_rotate
 
-                  
+
+    def on_first_timeout(self, data):
+        # Let's hope that Gtk maximized the window in the time this timeout took,
+        # so we can record the window size.
+        self.desired_window_size = self.get_size()
+        GLib.timeout_add(self.update_delay_in_ms, self.on_timeout, None)
+        repeat = False
+        return repeat
+          
     def on_timeout(self, data):
         self.providers["position"].update_position()
         
         #TODO: the following map size allocation only works 
         #      if self.widgets is a vertical box (portrait mode)
         #      and if self.canvas is a direct child of self.widgets
-        #      Also, this is fragile and inelegant.
-        current_window_size = self.get_size()
-        if current_window_size[0] != self.previous_window_xsize:
-            # the window size can change for 2 reasons: 
-            #    - either from a change in screen resolution (change from portrait to landscape)
-            #    - or from newly created widgets, so that their sum does not fit the screen any more.
-            # if the xsize changed, we assume it's a change of screen resolution and adapt the window size.
-            # (Let's hope both reasons did not happen at the same time)
-            # Else, all widgets have to squeeze a little.
-            #
-            # TODO: find out how to get the maximum size available to draw on (screen resolution minus title and menu bars)
-            self.previous_window_xsize = current_window_size[0]
-            self.previous_window_ysize = current_window_size[1]
+        #      And this is fragile and inelegant.
+        #      And this code does not allow resolution changes or monitor flips from portrait to landscape.
                 
         sum_of_all_widget_heights_except_map_canvas = sum( list( w.get_allocation().height for w in self.widgets.get_children() if w is not self.canvas) )
-        map_width  = self.previous_window_xsize
-        map_height = self.previous_window_ysize - sum_of_all_widget_heights_except_map_canvas # TODO: hard coded size!!!
+        map_width  = self.desired_window_size[0]
+        map_height = self.desired_window_size[1] - sum_of_all_widget_heights_except_map_canvas # TODO: hard coded size!!!
         
         angle_rad = self.providers["position"].heading * np.pi / 180. * self.auto_rotate
         cropped_tile = self.providers["map"].get_rotated_cropped_tile( 
