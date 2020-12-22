@@ -351,14 +351,14 @@ class MapWindow(Gtk.Window):
         
         self.maneuver_bar.set_new_route(maneuvers_with_direction_data = self.providers["directions"].maneuvers )
                     
-        polylines = []
+        route_line_dicts = []
         whole_route_line = self.providers["router"].get_polyline_of_whole_route()
         if len(whole_route_line["lat_deg"]) != 0:
-            polylines.append(whole_route_line)
+            route_line_dicts.append(whole_route_line)
         
         self.marker_layer.make_marker_list( destination    = button.result, 
                                             map_copyright  = self.providers["map"].map_copyright,
-                                            route_polylines = polylines,
+                                            route_line_dicts = route_line_dicts,
                                           )
 
         self.make_nav_buttons( layer = self.interactive_layer )        

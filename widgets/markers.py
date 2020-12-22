@@ -424,7 +424,7 @@ class ArrowWithOffsetLabel(Draftsman):
             self.text.draw(ctx, xtext, ytext, heading_rad)
             
 
-class PolyLine(Draftsman):
+class PolygonLine(Draftsman):
     def __init__(self, 
                  color_rgba = (0,0,0,1),
                  linewidth_px = 10
