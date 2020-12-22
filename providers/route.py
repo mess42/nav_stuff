@@ -192,21 +192,20 @@ class OSM_Scout(Router):
         locs = []
         for point in np.array(waypoints):
             locs += ["{\"lat\": " + str(point[1]) + ", \"lon\": " + str(point[0]) +"}"]
-        locations = "\"locations\": [" + ", ".join(locs) + "], " + "\"costing\": \"auto\", \"costing_options\": {\"auto\": {\"use_ferry\": 0.5, \"use_highways\": 1, \"use_tolls\": 0.5}},  \"directions_options\": {\"language\": \"en\", \"units\": \"kilometers\"}"
+        locations     = "\"locations\": [" + ", ".join(locs) + "]" 
         
-        json_str = "{" + locations + "}"
+        # TODO: define other options as parameters in profiles.json
+        other_options = "\"costing\": \"auto\", \"costing_options\": {\"auto\": {\"use_ferry\": 0.5, \"use_highways\": 1, \"use_tolls\": 0.5}},  \"directions_options\": {\"language\": \"en\", \"units\": \"kilometers\"}"
+        
+        json_str = "{" + locations + ", " + other_options + "}"
+        
         print("before encoding=", json_str)
+        
         json_str = helpers.download.encode_special_characters( json_str )
 
         url = self.url_template.replace("{json}", json_str)
 
         d = helpers.download.remote_json_to_py(url=url)
-        
-        print(d)
-        import json
-        f = open("valhalla_result.json", "w")
-        json.dump(d, f)
-        f.close()
-        
+               
         raise NotImplementedError("TODO: implement analysis of server response")
         self.maneuvers = []

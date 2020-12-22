@@ -78,7 +78,6 @@ def remote_json_to_py(url):
     """
     print("Downloading", url)
     json_request = requests.get(url)
-    print("response=", json_request.content.decode("utf-8"))
     p = json.JSONDecoder().decode( s = json_request.content.decode("utf-8") )
     return p
     
