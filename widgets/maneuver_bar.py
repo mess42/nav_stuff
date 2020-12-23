@@ -15,8 +15,7 @@ import helpers.angles
 class ManeuverBar(Gtk.Box):
     def __init__(self, in_bearing_is_down = True, pos_tolerance = 20, orientation = Gtk.Orientation.HORIZONTAL ):
     
-        self.spacing = 10
-        Gtk.Window.__init__(self, orientation=orientation, spacing = self.spacing)
+        Gtk.Window.__init__(self, orientation=orientation, spacing = 10)
         
         self.maneuvers = []
         self.in_bearing_is_down = in_bearing_is_down
@@ -33,7 +32,7 @@ class ManeuverBar(Gtk.Box):
         else:
             self.search_index_range = [0,0]
 
-        self.remake_all_widgets(i_start=0, window_xsize_px = self.window_xsize_px, spacing = self.spacing)
+        self.remake_all_widgets(i_start=0, window_xsize_px = self.window_xsize_px, spacing = self.get_spacing())
 
 
     def get_search_range(self, i_maneuver, overlap_distance = 200 ):
@@ -90,7 +89,7 @@ class ManeuverBar(Gtk.Box):
         # check if auto-rotate was toggled
         if in_bearing_is_down != self.in_bearing_is_down:
             self.in_bearing_is_down = in_bearing_is_down
-            self.remake_all_widgets( i_start = self.get_children()[0].maneuver_id, window_xsize_px = self.window_xsize_px, spacing=self.spacing)
+            self.remake_all_widgets( i_start = self.get_children()[0].maneuver_id, window_xsize_px = self.window_xsize_px, spacing=self.get_spacing())
         
         # check if the current position is in the search range
         if len(self.get_children()) != 0:
