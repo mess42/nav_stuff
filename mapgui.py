@@ -44,7 +44,8 @@ class MapWindow(Gtk.Window):
         else:
             self.settings = self.get_new_settings_dict(profiles=self.profiles)
             self.settings_have_changed = True
-        self.auto_rotate = True
+        
+        self.auto_rotate = False
 
         # providers for map, position, search, and routing
         self.providers = {}

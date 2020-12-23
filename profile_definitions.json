@@ -19,7 +19,7 @@
                 "map_copyright": "Map Data: (c) OpenStreetMap-Contributors SRTM | Map Layout: (c) OpenTopoMap CC-BY-SA",
                 "min_zoom": 5,
                 "max_zoom": 17,
-                "default_zoom":17
+                "default_zoom":15
                 }
         }, 
         "OSM Scout Server": {
@@ -29,8 +29,8 @@
                 "url_template": "http://localhost:8553/v1/tile?daylight=1&scale=1&z={z}&x={x}&y={y}",
                 "map_copyright": "Map Layout: OSM Scout Server (c) Rinigus GPL3 | Map data: See OSM Scout Server for further information.",
                 "min_zoom": 5,
-                "max_zoom": 42,
-                "default_zoom":17
+                "max_zoom": 17,
+                "default_zoom":15
                 }
         }
     },
