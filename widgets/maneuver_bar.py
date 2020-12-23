@@ -13,18 +13,19 @@ import helpers.angles
 
 
 class ManeuverBar(Gtk.Box):
-    def __init__(self, number_of_widgets = 3, in_bearing_is_down = True, pos_tolerance = 20, orientation = Gtk.Orientation.HORIZONTAL ):
+    def __init__(self, in_bearing_is_down = True, pos_tolerance = 20, orientation = Gtk.Orientation.HORIZONTAL ):
     
-        Gtk.Window.__init__(self, orientation=orientation, spacing = 10)
+        self.spacing = 10
+        Gtk.Window.__init__(self, orientation=orientation, spacing = self.spacing)
         
         self.maneuvers = []
         self.in_bearing_is_down = in_bearing_is_down
         self.search_index_range = [0,0]
         self.pos_tolerance = pos_tolerance
-        self.number_of_widgets = number_of_widgets
         
     
-    def set_new_route(self, maneuvers_with_direction_data):
+    def set_new_route(self, maneuvers_with_direction_data, window_xsize_px):
+        self.window_xsize_px = window_xsize_px
         self.maneuvers = maneuvers_with_direction_data
         
         if len(self.maneuvers) != 0:
@@ -32,7 +33,7 @@ class ManeuverBar(Gtk.Box):
         else:
             self.search_index_range = [0,0]
 
-        self.remake_all_widgets(i_start=0, number_of_widgets=self.number_of_widgets)
+        self.remake_all_widgets(i_start=0, window_xsize_px = self.window_xsize_px, spacing = self.spacing)
 
 
     def get_search_range(self, i_maneuver, overlap_distance = 200 ):
@@ -51,24 +52,36 @@ class ManeuverBar(Gtk.Box):
         
         return [imin, imax]
 
-    def remake_all_widgets(self, i_start, number_of_widgets):
+    def remake_all_widgets(self, i_start, window_xsize_px, spacing):
         for child in self.get_children():
             self.remove(child)
-        self.set_size_request(0,0)
+        self.set_size_request(0,0) # if no widgets are created later on, the size stays zero and the bar disappears
+        
+        number_of_icons = (window_xsize_px+spacing) // (150+spacing)
+        self.icon_size = 150
+        
+        if number_of_icons < 2:
+            number_of_icons = 2
+            self.icon_size = int ( (window_xsize_px - spacing)/2 )
+        elif number_of_icons < 3 and window_xsize_px >= 360:
+            number_of_icons = 3
+            self.icon_size = int ( (window_xsize_px - 2*spacing)/3 )
+        
+        if i_start + number_of_icons >= len(self.maneuvers):
+            number_of_icons = len(self.maneuvers) - i_start
 
-        number_of_widgets = min(number_of_widgets, len(self.maneuvers) )
-        for i_man in np.arange( number_of_widgets ) + i_start:
-            self.add_a_widget(i_man)
+        for i_man in np.arange( number_of_icons ) + i_start:
+            self.add_a_widget(i_man, icon_size=self.icon_size)
 
 
-    def add_a_widget(self, i_man):
+    def add_a_widget(self, i_man, icon_size):
         man_widget = widgets.maneuver_widget.ManeuverWidget(
                          maneuver = self.maneuvers[i_man], 
                          maneuver_id = i_man, 
                          in_bearing_is_down = self.in_bearing_is_down, 
-                         size_px = 120) # TODO: hard coded size !!!!
+                         size_px = icon_size)
         self.add( man_widget )
-        self.set_size_request(360,120) # TODO: hard coded size !!!!
+        self.set_size_request(icon_size,icon_size) 
         self.show_all()
         
     
@@ -77,7 +90,7 @@ class ManeuverBar(Gtk.Box):
         # check if auto-rotate was toggled
         if in_bearing_is_down != self.in_bearing_is_down:
             self.in_bearing_is_down = in_bearing_is_down
-            self.remake_all_widgets( i_start = self.get_children()[0].maneuver_id, number_of_widgets = self.number_of_widgets)
+            self.remake_all_widgets( i_start = self.get_children()[0].maneuver_id, window_xsize_px = self.window_xsize_px, spacing=self.spacing)
         
         # check if the current position is in the search range
         if len(self.get_children()) != 0:
@@ -109,7 +122,7 @@ class ManeuverBar(Gtk.Box):
                 self.remove( self.get_children()[0] )
                 
                 if self.get_children()[-1].maneuver_id < len(self.maneuvers)-1:
-                    self.add_a_widget(i_man = self.get_children()[-1].maneuver_id + 1)
+                    self.add_a_widget(i_man = self.get_children()[-1].maneuver_id + 1, icon_size=self.icon_size)
                 
                 self.search_index_range = self.get_search_range(i_maneuver = self.get_children()[0].maneuver_id, overlap_distance = 200 )
                 

@@ -349,7 +349,7 @@ class MapWindow(Gtk.Window):
         self.make_message_button(layer = self.interactive_layer, label = "Waiting for directions calculation ...")
         self.providers["directions"].set_data(router_maneuvers = self.providers["router"].maneuvers )
         
-        self.maneuver_bar.set_new_route(maneuvers_with_direction_data = self.providers["directions"].maneuvers )
+        self.maneuver_bar.set_new_route(maneuvers_with_direction_data = self.providers["directions"].maneuvers, window_xsize_px = self.desired_window_size[0] )
                     
         route_line_dicts = []
         whole_route_line = self.providers["router"].get_polyline_of_whole_route()
