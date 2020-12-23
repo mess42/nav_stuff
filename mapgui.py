@@ -53,7 +53,7 @@ class MapWindow(Gtk.Window):
         
         # Create widgets and auto-update them
         self.create_widgets()
-        GLib.timeout_add(500, self.on_first_timeout, None)
+        GLib.timeout_add(self.update_delay_in_ms, self.on_timeout, None)
 
 
     def create_widgets(self):
@@ -263,6 +263,11 @@ class MapWindow(Gtk.Window):
         layer.show_all()
 
 
+    def hide_map_layer_for_some_time(self, duration_in_ms=500):
+        self.map_layer.hide_map = True
+        GLib.timeout_add(duration_in_ms, self.on_hide_map_timed_out , None)
+
+        
     def make_settings_menu(self, layer):
         self.remove_all_children( layer )
         layer.set_row_spacing(0)
@@ -349,8 +354,10 @@ class MapWindow(Gtk.Window):
         self.make_message_button(layer = self.interactive_layer, label = "Waiting for directions calculation ...")
         self.providers["directions"].set_data(router_maneuvers = self.providers["router"].maneuvers )
         
-        self.maneuver_bar.set_new_route(maneuvers_with_direction_data = self.providers["directions"].maneuvers, window_xsize_px = self.desired_window_size[0] )
-                    
+        self.maneuver_bar.set_new_route(maneuvers_with_direction_data = self.providers["directions"].maneuvers, window_xsize_px = self.get_size()[0] )
+        
+        self.hide_map_layer_for_some_time( duration_in_ms = 500 ) # hide the map so that the other widgets have enough space to rearrange
+        
         route_line_dicts = []
         whole_route_line = self.providers["router"].get_polyline_of_whole_route()
         if len(whole_route_line["lat_deg"]) != 0:
@@ -369,12 +376,8 @@ class MapWindow(Gtk.Window):
         # toggle auto-rotate
         self.auto_rotate = not self.auto_rotate
 
-
-    def on_first_timeout(self, data):
-        # Let's hope that Gtk maximized the window in the time this timeout took,
-        # so we can record the window size.
-        self.desired_window_size = self.get_size()
-        GLib.timeout_add(self.update_delay_in_ms, self.on_timeout, None)
+    def on_hide_map_timed_out(self, data):
+        self.map_layer.hide_map = False
         repeat = False
         return repeat
           
@@ -386,11 +389,12 @@ class MapWindow(Gtk.Window):
         #      and if self.canvas is a direct child of self.widgets
         #      And this is fragile and inelegant.
         #      And this code does not allow resolution changes or monitor flips from portrait to landscape.
+        window_size = self.get_size()
                 
         sum_of_all_widget_heights_except_map_canvas = sum( list( w.get_allocation().height for w in self.widgets.get_children() if w is not self.canvas) )
-        map_width  = self.desired_window_size[0]
-        map_height = self.desired_window_size[1] - sum_of_all_widget_heights_except_map_canvas # TODO: hard coded size!!!
-        
+        map_width  = window_size[0]
+        map_height = window_size[1] - sum_of_all_widget_heights_except_map_canvas # TODO: hard coded size!!!
+                
         angle_rad = self.providers["position"].heading * np.pi / 180. * self.auto_rotate
         cropped_tile = self.providers["map"].get_rotated_cropped_tile( 
                                     xsize_px = map_width, 
