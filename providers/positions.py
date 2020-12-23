@@ -189,7 +189,7 @@ class PositionSimulation(PositionProvider):
                                                     lon2_deg = self.__path_lon_deg[:-1],
                                                    )
         covered_dist_in_m = np.cumsum(delta_in_m)
-        start_time = datetime.datetime.now().timestamp() - 28150
+        start_time = datetime.datetime.now().timestamp() #- 28150
         self.__path_time = start_time + np.hstack([[0],covered_dist_in_m]) / self.velocity
         
         self.lat_interpolator = interp1d(self.__path_time, self.__path_lat_deg)

@@ -18,7 +18,7 @@ def distance_to_rounded_textblocks(distance_in_m):
         out["distance"] = str( int(np.round(distance_in_m,-1)) )
         out["distance_unit"] = "meters"
         out["distance_unit_abbrev"] = "m"
-    elif distance_in_m < 1000:
+    elif distance_in_m < 950:
         out["distance_preposition"] = "in"
         out["distance"] = str( int(np.round(distance_in_m,-2)) )
         out["distance_unit"] = "meters"
