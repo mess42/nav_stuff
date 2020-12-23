@@ -56,4 +56,4 @@ class ManeuverWidget(Gtk.Box):
     
     
     def set_top_text(self, text):
-        self.top_label.set_text( text )
+        self.top_label.set_markup("<span font_size=\"x-large\">" + text + "</span>")
